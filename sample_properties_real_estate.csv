@@ -1,0 +1,19 @@
+Sr Nos	Builder	Sales Person	Project name	Land Parcel	Tower	Floor	Specification	Carpet	Price	Flat/Floor	Total Units	Possession	Parking	Construction	Amenities	Location	Launch Date	Details
+1	Skyi Developer	Rahul - 9876543210	Songbirds	55 Acre	27	16 Floor	2BHK	1100	90L	4	108	Mar 2025	2=1	Mivan	Gym, Pool, Parking, 24/7 Security	Bhugaon	2014	Launched
+1	Skyi Developer	Rahul - 9876543210	Songbirds	55 Acre	27	16 Floor	3BHK	1400	115L	2	54	Mar 2025	2=1	Mivan	Gym, Pool, Parking, 24/7 Security	Bhugaon	2014	Launched
+1	Skyi Developer	Rahul - 9876543210	Songbirds	55 Acre	27	16 Floor	4BHK	1800	145L	1	27	Mar 2025	3=2	Mivan	Gym, Pool, Parking, 24/7 Security	Bhugaon	2014	Launched
+2	Kohinoor Developer	Priya - 8765432109	Kohinoor Woodshire	3.5 Acre	2	12 Floor	2BHK	1100	85L-92L	A-4, B-4	80	Jun 2025	2=1	RCC	Gym, Tennis Court, Swimming Pool	Bhugaon	2020	Launching Soon
+2	Kohinoor Developer	Priya - 8765432109	Kohinoor Woodshire	3.5 Acre	2	12 Floor	3BHK	1300	110L-120L	A-2, B-2	40	Jun 2025	2=1	RCC	Gym, Tennis Court, Swimming Pool	Bhugaon	2020	Launching Soon
+2	Kohinoor Developer	Priya - 8765432109	Kohinoor Woodshire	3.5 Acre	2	12 Floor	4BHK	1700	155L-168L	1	15	Jun 2025	3=2	RCC	Gym, Tennis Court, Swimming Pool	Bhugaon	2020	Launched
+3	Rohan Developer	Amit - 9654321098	Rohan Saroha	2.5 Acre	1	15 Floor	2BHK	950	75L	6	90	Dec 2025	Single	RCC Brickwork	All Amenities	Bhugaon	2018	Available
+3	Rohan Developer	Amit - 9654321098	Rohan Saroha	2.5 Acre	1	15 Floor	3BHK	1250	105L-112L	4	60	Dec 2025	2=1	RCC Brickwork	All Amenities	Bhugaon	2018	Available
+3	Rohan Developer	Amit - 9654321098	Rohan Saroha	2.5 Acre	1	15 Floor	Villa	2800	180L	1	8	Dec 2025	2	RCC Brickwork	All Amenities	Bhugaon	2018	Available
+4	Paranjape Developer	Vivek - 8765432110	Forest Trails	4 Acre	3	B+G+7	2.5BHK	1200	95L-102L	A-2, B-3	70	Sep 2025	2=1	Mivan	Gym, Pool, Garden, Community Hall	Bhugaon	2019	Launching Soon
+4	Paranjape Developer	Vivek - 8765432110	Forest Trails	4 Acre	3	B+G+7	3BHK	1450	125L-135L	A-1, B-2	42	Sep 2025	2=1	Mivan	Gym, Pool, Garden, Community Hall	Bhugaon	2019	Available
+4	Paranjape Developer	Vivek - 8765432110	Forest Trails	4 Acre	3	B+G+7	4BHK	1900	170L-185L	1	12	Sep 2025	3=2	Mivan	Gym, Pool, Garden, Community Hall	Bhugaon	2019	Available
+5	Nirmiti Unicorn	Deepak - 7654321098	Serenora	8 Acre	5	18 Floor	1BHK	650	45L	8	160	May 2026	Single	RCC	Basic Amenities, Parking	Bhugaon	2021	Future Phase 2
+5	Nirmiti Unicorn	Deepak - 7654321098	Serenora	8 Acre	5	18 Floor	2BHK	950	70L-78L	A-4, B-4	120	May 2026	Single	RCC	Basic Amenities, Parking	Bhugaon	2021	Available
+5	Nirmiti Unicorn	Deepak - 7654321098	Serenora	8 Acre	5	18 Floor	3BHK	1350	110L-125L	A-2, B-2	60	May 2026	2=1	RCC	Basic Amenities, Parking	Bhugaon	2021	Available
+6	Oree Realtors	Neha - 9876543211	Cloud 28	6 Acre	4	20 Floor	3BHK	1250-1400	120L-155L	A-3, B-3	100	Aug 2024	2=1	Mivan	All Amenities, Luxury Features	Bhugaon	2022	Sold out
+6	Oree Realtors	Neha - 9876543211	Cloud 28	6 Acre	4	20 Floor	4BHK	1600-1800	160L-200L	A-1, B-2	50	Aug 2024	3=2	Mivan	All Amenities, Luxury Features	Bhugaon	2022	Sold out
+6	Oree Realtors	Neha - 9876543211	Cloud 28	6 Acre	4	20 Floor	5BHK	2200	250L-300L	1	12	Aug 2024	4=3	Mivan	All Amenities, Luxury Features	Bhugaon	2022	Limited units available
