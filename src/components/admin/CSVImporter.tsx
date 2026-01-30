@@ -115,7 +115,12 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
   const parseCSV = (text: string): CSVProperty[] => {
     const lines = text.split('\n');
     const delimiter = lines[0].includes('\t') ? '\t' : ',';
-    const headers = lines[0].split(delimiter).map(h => h.trim());
+    const normalizeHeader = (header: string) =>
+      header.toLowerCase().replace(/\s|_|-/g, '');
+    const headers = lines[0]
+      .split(delimiter)
+      .map(h => h.trim())
+      .map(normalizeHeader);
     const data: CSVProperty[] = [];
 
     for (let i = 1; i < lines.length; i++) {
@@ -130,26 +135,26 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
       });
 
       const csvRow: CSVProperty = {
-        srNo: row['projectId'] || '',
+        srNo: row['projectid'] || '',
         builder: row['builder'] || '',
-        salesPerson: row['salesPerson'] || '',
-        projectName: row['projectName'] || '',
-        landParcel: row['landParcel'] || '',
+        salesPerson: row['salesperson'] || '',
+        projectName: row['projectname'] || '',
+        landParcel: row['landparcel'] || '',
         tower: row['tower'] || '',
         floor: row['floor'] || '',
-        specification: row['bhkType'] || '',
+        specification: row['bhktype'] || '',
         carpet: row['carpet'] || '',
         price: row['price'] || '',
-        flats: row['flatPerFloor'] || '',
-        totalUnits: row['totalUnits'] || '',
+        flats: row['flatperfloor'] || '',
+        totalUnits: row['totalunits'] || '',
         possession: row['possession'] || '',
         parking: row['parking'] || '',
         construction: row['construction'] || '',
         amenities: row['amenities'] || '',
         location: row['location'] || '',
-        launchDate: row['launchDate'] || '',
+        launchDate: row['launchdate'] || '',
         details: row['details'] || '',
-        imageUrl: row['imageUrl'] || '',
+        imageUrl: row['imageurl'] || '',
       };
 
       // Validate that row has required data
