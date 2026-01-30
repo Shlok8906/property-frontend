@@ -14,7 +14,8 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:8080',
-  process.env.FRONTEND_URL || 'http://localhost:3000'
+  'https://nivaas-tau.vercel.app',
+  process.env.FRONTEND_URL ? `https://${process.env.FRONTEND_URL}` : null
 ].filter(Boolean);
 
 // CORS Configuration
