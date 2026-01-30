@@ -120,8 +120,47 @@ export class RealEstateCSVParser {
     const headers: Record<number, string> = {};
     const cols = this.splitCSVLine(headerLine);
 
+    const normalizeHeader = (header: string): string =>
+      header
+        .toLowerCase()
+        .trim()
+        .replace(/[\s_\-./()]/g, '');
+
+    const FIELD_ALIASES: Record<string, string[]> = {
+      srNo: ['srno', 'srnos', 'sr no', 'sr nos', 'projectid'],
+      builder: ['builder', 'developer', 'developername', 'company', 'entity'],
+      salesPerson: ['salesperson', 'sales person', 'sales', 'salesman', 'agent', 'channelpartner'],
+      projectName: ['projectname', 'project name', 'project', 'projectid', 'projectnam'],
+      landParcel: ['landparcel', 'land parcel', 'parcel', 'parcelid', 'plot'],
+      tower: ['tower', 'block', 'building', 'wing'],
+      construction: ['construction', 'constructionstatus', 'status'],
+      amenities: ['amenities', 'amenity', 'facilities', 'features'],
+      location: ['location', 'locality', 'area', 'city'],
+      possession: ['possession', 'possessiondate', 'possessionstatus', 'readyto'],
+      launchDate: ['launchdate', 'launch date', 'releasedate'],
+      specification: ['bhktype', 'bhk', 'specification', 'unittype', 'type'],
+      carpet: ['carpet', 'carpetarea', 'area', 'builtuparea', 'sqft'],
+      price: ['price', 'cost', 'rate', 'amount'],
+      floor: ['floor', 'floorno', 'floornum'],
+      flats: ['flatperfloor', 'flatsperfloor', 'flat/floor', 'flats/floor', 'unitsperfloor'],
+      totalUnits: ['totalunits', 'total units', 'units', 'unitcount'],
+      parking: ['parking', 'parkingslot', 'parkingspace'],
+      details: ['details', 'description', 'remarks', 'notes'],
+      imageUrl: ['imageurl', 'imageurls', 'image', 'images'],
+    };
+
     cols.forEach((col, index) => {
-      headers[index] = col.toLowerCase().trim();
+      const normalized = normalizeHeader(col);
+      let mapped = col.toLowerCase().trim();
+
+      for (const [field, aliases] of Object.entries(FIELD_ALIASES)) {
+        if (aliases.some(alias => normalizeHeader(alias) === normalized)) {
+          mapped = field;
+          break;
+        }
+      }
+
+      headers[index] = mapped;
     });
 
     return headers;
@@ -146,21 +185,31 @@ export class RealEstateCSVParser {
       const value = values[index]?.trim() || '';
 
       switch (header) {
-        case 'sr nos':
         case 'sr no':
+        case 'sr nos':
+        case 'srno':
+        case 'srnos':
+        case 'projectid':
+        case 'srNo':
           row.srNo = value;
           break;
         case 'builder':
           row.builder = value;
           break;
+        case 'salesperson':
         case 'sales person':
         case 'sales personnel':
+        case 'salesPerson':
           row.salesPerson = value;
           break;
+        case 'projectname':
         case 'project name':
+        case 'projectName':
           row.projectName = value;
           break;
+        case 'landparcel':
         case 'land parcel':
+        case 'landParcel':
           row.landParcel = value;
           break;
         case 'tower':
@@ -170,18 +219,25 @@ export class RealEstateCSVParser {
           row.floor = value;
           break;
         case 'specification':
+        case 'bhktype':
+        case 'bhk':
           row.specification = value;
           break;
         case 'carpet':
+        case 'carpetarea':
           row.carpet = value;
           break;
         case 'price':
           row.price = value;
           break;
+        case 'flatperfloor':
+        case 'flatsperfloor':
         case 'flat/floor':
         case 'flats/floor':
+        case 'flats':
           row.flats = value;
           break;
+        case 'totalunits':
         case 'total units':
           row.totalUnits = value;
           break;
@@ -200,6 +256,7 @@ export class RealEstateCSVParser {
         case 'location':
           row.location = value;
           break;
+        case 'launchdate':
         case 'launch date':
           row.launchDate = value;
           break;
@@ -208,6 +265,7 @@ export class RealEstateCSVParser {
           break;
         case 'details':
         case 'remarks':
+        case 'description':
           row.details = value;
           break;
       }
@@ -297,7 +355,11 @@ export class RealEstateCSVParser {
       tower: row.tower,
       floor: row.floor,
       carpetAreas,
-      priceRange,
+      priceRange: {
+        min: priceRange.minLakhs,
+        max: priceRange.maxLakhs,
+        originalFormat: priceRange.originalFormat,
+      },
       flatsPerFloor: row.flats,
       totalUnits,
       construction: row.construction,
@@ -307,7 +369,9 @@ export class RealEstateCSVParser {
       status,
       furnitureType: 'unfurnished',
       details: row.details,
-      rawCsvRow: row as Record<string, string>,
+      rawCsvRow: Object.fromEntries(
+        Object.entries(row).map(([key, value]) => [key, value ?? ''])
+      ) as Record<string, string>,
     };
   }
 

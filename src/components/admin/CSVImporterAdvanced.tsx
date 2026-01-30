@@ -360,154 +360,124 @@ export function CSVImporterAdvanced({ onImport, disabled = false }: CSVImporterA
 
       {/* AI Cleaning Preview Dialog */}
       <Dialog open={showCleaningPreview} onOpenChange={setShowCleaningPreview}>
-        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
-          <DialogHeader className="sticky top-0 bg-background z-10">
-            <DialogTitle className="flex items-center gap-3 text-2xl">
-              <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-2 rounded-lg">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-500" />
               AI CSV Cleaning - Preview
             </DialogTitle>
-            <DialogDescription className="text-base">
-              Your CSV has been analyzed and cleaned automatically. Review the results below.
+            <DialogDescription>
+              Review the automatic fixes applied to your CSV file
             </DialogDescription>
           </DialogHeader>
 
           {cleaningResult && (
-            <div className="space-y-6">
-              {/* Statistics Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="border-2 border-blue-200 bg-blue-50">
-                  <CardContent className="pt-6">
-                    <div className="text-center">
-                      <div className="text-4xl font-bold text-blue-600 mb-2">
-                        {cleaningResult.originalRows}
-                      </div>
-                      <p className="text-sm font-medium text-blue-700">Original Rows</p>
-                    </div>
-                  </CardContent>
+            <div className="space-y-4">
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-4">
+                <Card className="p-4">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {cleaningResult.originalRows}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Original Rows</div>
                 </Card>
-                <Card className="border-2 border-green-200 bg-green-50">
-                  <CardContent className="pt-6">
-                    <div className="text-center">
-                      <div className="text-4xl font-bold text-green-600 mb-2">
-                        {cleaningResult.cleanedRows}
-                      </div>
-                      <p className="text-sm font-medium text-green-700">Valid Properties ✓</p>
-                    </div>
-                  </CardContent>
+                <Card className="p-4">
+                  <div className="text-2xl font-bold text-green-600">
+                    {cleaningResult.cleanedRows}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Valid Properties</div>
                 </Card>
-                <Card className="border-2 border-amber-200 bg-amber-50">
-                  <CardContent className="pt-6">
-                    <div className="text-center">
-                      <div className="text-4xl font-bold text-amber-600 mb-2">
-                        {cleaningResult.issues.length}
-                      </div>
-                      <p className="text-sm font-medium text-amber-700">Rows Cleaned/Skipped</p>
-                    </div>
-                  </CardContent>
+                <Card className="p-4">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {cleaningResult.changes.length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Auto-Fixes Applied</div>
                 </Card>
               </div>
 
-              {/* Summary */}
-              <Alert className="border-l-4 border-l-green-500 bg-green-50">
-                <CheckCircle className="h-5 w-5 text-green-600 mb-2" />
-                <AlertDescription className="text-green-800">
-                  <strong className="block mb-1">Great! {cleaningResult.cleanedRows} properties are ready to import.</strong>
-                  {cleaningResult.issues.length > 0 && (
-                    <span>{cleaningResult.issues.length} rows had formatting issues and were automatically fixed or skipped.</span>
-                  )}
-                </AlertDescription>
-              </Alert>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Summary view shown. Details are optional.</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowCleaningDetails((prev) => !prev)}
+                >
+                  {showCleaningDetails ? 'Hide details' : 'Show details'}
+                </Button>
+              </div>
 
-              {/* Expandable Details */}
-              {(cleaningResult.changes.length > 0 || cleaningResult.issues.length > 0) && (
-                <div className="border rounded-lg p-4 bg-gray-50">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-between mb-4"
-                    onClick={() => setShowCleaningDetails((prev) => !prev)}
-                  >
-                    <span className="font-semibold text-left">
-                      {showCleaningDetails ? '▼' : '▶'} Cleaning Details & Issues
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      {cleaningResult.changes.length} fixes, {cleaningResult.issues.length} skipped
-                    </span>
-                  </Button>
-
-                  {showCleaningDetails && (
-                    <div className="space-y-4 mt-4 pt-4 border-t">
-                      {/* Changes Made */}
-                      {cleaningResult.changes.length > 0 && (
-                        <div>
-                          <h4 className="font-semibold text-sm flex items-center gap-2 mb-2 text-green-700">
-                            <CheckCircle className="w-4 h-4" />
-                            Automatic Fixes Applied ({cleaningResult.changes.length})
-                          </h4>
-                          <div className="max-h-40 overflow-y-auto space-y-1 bg-white p-3 rounded border border-green-200">
-                            {cleaningResult.changes.slice(0, 15).map((change, idx) => (
-                              <div key={idx} className="text-xs text-gray-700 flex gap-2">
-                                <span className="text-green-600 flex-shrink-0">✓</span>
-                                <span>{change}</span>
-                              </div>
-                            ))}
-                            {cleaningResult.changes.length > 15 && (
-                              <div className="text-xs text-muted-foreground italic pt-2">
-                                ... and {cleaningResult.changes.length - 15} more fixes
-                              </div>
-                            )}
+              {showCleaningDetails && (
+                <>
+                  {/* Changes Made */}
+                  {cleaningResult.changes.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-sm flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        Automatic Fixes Applied
+                      </h3>
+                      <div className="max-h-48 overflow-y-auto space-y-1 bg-green-50 p-3 rounded">
+                        {cleaningResult.changes.map((change, idx) => (
+                          <div key={idx} className="text-xs text-green-700">
+                            ✓ {change}
                           </div>
-                        </div>
-                      )}
-
-                      {/* Issues Found */}
-                      {cleaningResult.issues.length > 0 && (
-                        <div>
-                          <h4 className="font-semibold text-sm flex items-center gap-2 mb-2 text-amber-700">
-                            <AlertCircle className="w-4 h-4" />
-                            Rows Skipped ({cleaningResult.issues.length})
-                          </h4>
-                          <div className="max-h-40 overflow-y-auto space-y-1 bg-white p-3 rounded border border-amber-200">
-                            {cleaningResult.issues.slice(0, 15).map((issue, idx) => (
-                              <div key={idx} className="text-xs text-gray-700 flex gap-2">
-                                <span className="text-amber-600 flex-shrink-0">⚠</span>
-                                <span>{issue}</span>
-                              </div>
-                            ))}
-                            {cleaningResult.issues.length > 15 && (
-                              <div className="text-xs text-muted-foreground italic pt-2">
-                                ... and {cleaningResult.issues.length - 15} more skipped rows
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                        ))}
+                      </div>
                     </div>
                   )}
-                </div>
+
+                  {/* Issues Found */}
+                  {cleaningResult.issues.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-sm flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-orange-600" />
+                        Rows Skipped (Invalid Data)
+                      </h3>
+                      <div className="max-h-48 overflow-y-auto space-y-1 bg-orange-50 p-3 rounded">
+                        {cleaningResult.issues.slice(0, 20).map((issue, idx) => (
+                          <div key={idx} className="text-xs text-orange-700">
+                            ⚠ {issue}
+                          </div>
+                        ))}
+                        {cleaningResult.issues.length > 20 && (
+                          <div className="text-xs text-muted-foreground">
+                            ... and {cleaningResult.issues.length - 20} more skipped rows
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Preview of cleaned data */}
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-sm">Cleaned CSV Preview</h3>
+                    <div className="bg-gray-50 p-3 rounded max-h-64 overflow-auto">
+                      <pre className="text-xs font-mono">
+                        {cleaningResult.cleanedText.split('\n').slice(0, 15).join('\n')}
+                        {cleaningResult.cleanedText.split('\n').length > 15 && '\n... (showing first 15 rows)'}
+                      </pre>
+                    </div>
+                  </div>
+                </>
               )}
 
-              {/* Preview of cleaned data */}
-              <div className="border rounded-lg p-4 bg-gray-50">
-                <h4 className="font-semibold text-sm mb-3 text-gray-800">Cleaned CSV Preview</h4>
-                <div className="bg-white border rounded p-4 max-h-60 overflow-auto">
-                  <pre className="text-xs font-mono text-gray-800 whitespace-pre-wrap break-words">
-                    {cleaningResult.cleanedText.split('\n').slice(0, 20).join('\n')}
-                    {cleaningResult.cleanedText.split('\n').length > 20 && '\n\n... (showing first 20 rows)'}
-                  </pre>
-                </div>
-              </div>
-
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-4 sticky bottom-0 bg-background border-t">
+              <div className="flex gap-3 pt-4">
                 <Button
                   onClick={() => proceedWithCleaned(cleaningResult.cleanedText)}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold"
+                  className="flex-1"
                   disabled={cleaningResult.cleanedRows === 0}
                 >
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Proceed with {cleaningResult.cleanedRows} Valid Properties
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowCleaningPreview(false);
+                    setCleaningResult(null);
+                  }}
+                >
+                  Cancel
                 </Button>
                 <Button
                   variant="outline"
@@ -522,16 +492,7 @@ export function CSVImporterAdvanced({ onImport, disabled = false }: CSVImporterA
                   }}
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Download
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowCleaningPreview(false);
-                    setCleaningResult(null);
-                  }}
-                >
-                  Cancel
+                  Download Cleaned CSV
                 </Button>
               </div>
             </div>
