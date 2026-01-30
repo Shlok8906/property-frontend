@@ -19,7 +19,7 @@ const mapToProperties = (
     const priceLakhs = config.priceRange?.min ?? 0;
     const price = Math.round(priceLakhs * 100000);
 
-    return {
+    const mapped = {
       title: `${project?.projectName ?? 'Property'} - ${config.specification}`,
       location: project?.location ?? 'Unknown',
       bhk: config.specification || 'N/A',
@@ -42,6 +42,10 @@ const mapToProperties = (
       image_url: config.imageUrls?.[0] || undefined,
       status: 'active',
     };
+
+    console.log(`📦 Property: ${mapped.title}`, { images: mapped.images, image_url: mapped.image_url });
+
+    return mapped;
   });
 };
 

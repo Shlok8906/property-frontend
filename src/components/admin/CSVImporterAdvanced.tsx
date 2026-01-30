@@ -84,6 +84,9 @@ export function CSVImporterAdvanced({ onImport, disabled = false }: CSVImporterA
     try {
       const result = parseRealEstateCSV(cleanedText);
 
+      // Debug: Log image URLs
+      console.log('📸 Image URLs parsed:', result.configurations.map(c => ({ spec: c.specification, images: c.imageUrls })));
+
       // Check if we got any valid data
       if (result.configurations.length === 0) {
         toast({
