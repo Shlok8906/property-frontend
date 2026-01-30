@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -87,6 +87,8 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
   const [showPreview, setShowPreview] = useState(false);
   const [showColumnMapping, setShowColumnMapping] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [selectedFileName, setSelectedFileName] = useState('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
 
   const [columnMapping, setColumnMapping] = useState({
@@ -251,6 +253,8 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setSelectedFileName(file.name);
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -285,6 +289,21 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
     };
 
     reader.readAsText(file);
+  };
+
+  const handleClearFile = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    setSelectedFileName('');
+    setCSVData([]);
+    setMappedData([]);
+    setSelectedRows(new Set());
+    setShowPreview(false);
+    toast({
+      title: 'Cleared',
+      description: 'CSV file removed',
+    });
   };
 
   const handleImportSelected = () => {
@@ -347,8 +366,26 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
                 type="file"
                 accept=".csv,.tsv,.txt"
                 onChange={handleFileUpload}
+                ref={fileInputRef}
                 className="mt-2"
               />
+              {selectedFileName && (
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground truncate">
+                    Selected: {selectedFileName}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="gap-2"
+                    onClick={handleClearFile}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Remove CSV
+                  </Button>
+                </div>
+              )}
               <p className="text-xs text-muted-foreground mt-2">
                 Supported formats: CSV, TSV, TXT (Tab-separated or comma-separated)
               </p>
