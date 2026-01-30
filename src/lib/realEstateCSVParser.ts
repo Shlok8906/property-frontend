@@ -273,6 +273,9 @@ export class RealEstateCSVParser {
         case 'image':
         case 'images':
           row.imageUrl = value;
+          if (value) {
+            console.log('🖼️ Raw imageUrl from CSV:', { value, length: value.length });
+          }
           break;
       }
     });
@@ -523,11 +526,21 @@ export class RealEstateCSVParser {
    * Handles comma, pipe, or semicolon separated URLs
    */
   private parseImageUrls(imageUrlStr: string): string[] {
-    if (!imageUrlStr) return [];
-    return imageUrlStr
+    if (!imageUrlStr) {
+      console.log('🖼️ parseImageUrls: Empty input');
+      return [];
+    }
+    
+    const urls = imageUrlStr
       .split(/[,|;]/)
-      .map((url) => url.trim())
-      .filter((url) => url.startsWith('http://') || url.startsWith('https://'));
+      .map((url) => url.trim());
+    
+    console.log('🖼️ parseImageUrls - Split URLs:', urls);
+    
+    const filtered = urls.filter((url) => url.startsWith('http://') || url.startsWith('https://'));
+    console.log('🖼️ parseImageUrls - After filtering:', filtered);
+    
+    return filtered;
   }
   /**
    * Generate unique project ID
