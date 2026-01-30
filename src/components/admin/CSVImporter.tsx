@@ -114,19 +114,155 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
     imageUrl: 'imageUrl',
   });
 
-  const normalizeHeader = (header: string) =>
-    header.toLowerCase().replace(/\s|_|-/g, '');
+  // Comprehensive header mapping with intelligent learning
+  const FIELD_ALIASES: Record<string, string[]> = {
+    // Builder
+    builder: ['builder', 'developer', 'developername', 'company', 'entity'],
+    
+    // Project
+    projectName: [
+      'projectname', 'projectnam', 'projecttitle', 'projectn', 'project',
+      'projectid', 'name', 'title', 'projectcname', 'projname'
+    ],
+    
+    // Sales Person
+    salesPerson: [
+      'salesperson', 'sales', 'salesman', 'salesmanname', 'agent', 'agentname',
+      'channelpartner', 'partner', 'contact', 'salespersc'
+    ],
+    
+    // Specification/BHK
+    specification: [
+      'bhktype', 'bhk', 'specification', 'type', 'unittype', 'flattype',
+      'bhkconfig', 'configuration', 'roomtype', 'propertytype', 'specification',
+      'bhktyp'
+    ],
+    
+    // Carpet Area
+    carpet: [
+      'carpet', 'carpetarea', 'carpetareainqft', 'area', 'builtuparea', 
+      'totalarea', 'areainqft', 'sqft', 'sqm', 'carpet', 'carpetareainsqft'
+    ],
+    
+    // Price
+    price: [
+      'price', 'cost', 'priceincr', 'priceinl', 'priceininr', 'rate', 'amount',
+      'totalcost', 'baseprice'
+    ],
+    
+    // Location
+    location: [
+      'location', 'locality', 'area', 'areaname', 'city', 'place', 'locationname',
+      'locationnam', 'region'
+    ],
+    
+    // Possession
+    possession: [
+      'possession', 'possessiondate', 'possessionstatus', 'readyto', 'readytocomplete',
+      'deliverydate', 'handoverdate'
+    ],
+    
+    // Tower/Block
+    tower: [
+      'tower', 'block', 'buildingname', 'wingname', 'section', 'phase',
+      'towername', 'blocka', 'blockname'
+    ],
+    
+    // Construction Status
+    construction: [
+      'construction', 'constructionstatus', 'status', 'progressstatus', 'phase',
+      'developmentphase'
+    ],
+    
+    // Amenities
+    amenities: [
+      'amenities', 'amenity', 'facilities', 'amenitieslist', 'features',
+      'benefits'
+    ],
+    
+    // Floor
+    floor: [
+      'floor', 'floorno', 'floornum', 'floorlevel', 'story', 'flornumber'
+    ],
+    
+    // Flats Per Floor
+    flats: [
+      'flatperfloor', 'flatsperfloor', 'unitsperfloor', 'flatsperflo',
+      'flatsperflo', 'unitsperflo'
+    ],
+    
+    // Total Units
+    totalUnits: [
+      'totalunits', 'units', 'totalunit', 'unitcount', 'totalflats', 
+      'flatstotal', 'noofunits'
+    ],
+    
+    // Parking
+    parking: [
+      'parking', 'parkingslot', 'parkingspace', 'parkingtype',
+      'coveredparking', 'openparking'
+    ],
+    
+    // Land Parcel
+    landParcel: [
+      'landparcel', 'landparcelid', 'parcelid', 'parcel', 'lotnum', 'plotnum'
+    ],
+    
+    // Launch Date
+    launchDate: [
+      'launchdate', 'launchda', 'releasedate', 'projectlaunch', 'announcementdate'
+    ],
+    
+    // Details/Description
+    details: [
+      'details', 'description', 'remarks', 'notes', 'additionalinfo',
+      'description', 'otherdetails'
+    ],
+    
+    // Image URLs
+    imageUrl: [
+      'imageurl', 'imageUrls', 'image', 'images', 'imagelink', 'imageurlscoma',
+      'imageurl', 'imageurlsc', 'photo', 'photos', 'pictures', 'imagepaths'
+    ],
+  };
 
-  const detectDelimiter = (headerLine: string) => {
+  const normalizeHeader = (header: string): string => {
+    return header
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '')      // Remove all whitespace
+      .replace(/_/g, '')        // Remove underscores
+      .replace(/-/g, '')        // Remove hyphens
+      .replace(/\//g, '')       // Remove slashes
+      .replace(/\./g, '')       // Remove dots
+      .replace(/[()]/g, '');    // Remove parentheses
+  };
+
+  // Intelligent field mapping - learns which normalized header maps to which field
+  const mapHeaderToField = (normalizedHeader: string): string | null => {
+    for (const [fieldName, aliases] of Object.entries(FIELD_ALIASES)) {
+      for (const alias of aliases) {
+        if (normalizeHeader(alias) === normalizedHeader) {
+          return fieldName;
+        }
+      }
+    }
+    return null;
+  };
+
+  const detectDelimiter = (headerLine: string): string => {
     if (headerLine.includes('\t')) return '\t';
     if (headerLine.includes(';')) return ';';
     return ',';
   };
 
-  const getValue = (row: Record<string, string>, aliases: string[]) => {
-    for (const alias of aliases) {
-      const key = normalizeHeader(alias);
-      if (row[key]) return row[key];
+  const getValue = (row: Record<string, string>, fieldAliases: string[]): string => {
+    // Try to find the field using our comprehensive alias list
+    for (const alias of fieldAliases) {
+      const normalized = normalizeHeader(alias);
+      if (row[normalized]) {
+        return row[normalized];
+      }
     }
     return '';
   };
@@ -136,10 +272,19 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
     if (!lines[0]) return [];
 
     const delimiter = detectDelimiter(lines[0]);
-    const headers = lines[0]
-      .split(delimiter)
-      .map(h => h.trim())
-      .map(normalizeHeader);
+    
+    // Parse headers and map them to field names
+    const rawHeaders = lines[0].split(delimiter).map(h => h.trim());
+    const headerMapping: Record<string, string> = {}; // normalized header -> field name
+    
+    rawHeaders.forEach(rawHeader => {
+      const normalized = normalizeHeader(rawHeader);
+      const fieldName = mapHeaderToField(normalized);
+      if (fieldName) {
+        headerMapping[normalized] = fieldName;
+      }
+    });
+
     const data: CSVProperty[] = [];
 
     for (let i = 1; i < lines.length; i++) {
@@ -147,37 +292,41 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
 
       const values = lines[i].split(delimiter).map(v => v.trim());
       
-      // Map by header names instead of position
+      // Map values by their field names
       const row: Record<string, string> = {};
-      headers.forEach((header, index) => {
-        row[header] = values[index] || '';
+      rawHeaders.forEach((rawHeader, index) => {
+        const normalized = normalizeHeader(rawHeader);
+        const fieldName = headerMapping[normalized];
+        if (fieldName) {
+          row[fieldName] = values[index] || '';
+        }
       });
 
       const csvRow: CSVProperty = {
-        srNo: getValue(row, ['projectId', 'project', 'id']),
-        builder: getValue(row, ['builder']),
-        salesPerson: getValue(row, ['salesPerson', 'sales person', 'sales']),
-        projectName: getValue(row, ['projectName', 'project name', 'project']),
-        landParcel: getValue(row, ['landParcel', 'land parcel', 'land']),
-        tower: getValue(row, ['tower', 'block']),
-        floor: getValue(row, ['floor']),
-        specification: getValue(row, ['bhkType', 'bhk', 'specification']),
-        carpet: getValue(row, ['carpet', 'carpetArea', 'area']),
-        price: getValue(row, ['price', 'cost']),
-        flats: getValue(row, ['flatPerFloor', 'flatsPerFloor', 'flat/floor']),
-        totalUnits: getValue(row, ['totalUnits', 'units', 'totalunit']),
-        possession: getValue(row, ['possession', 'possessionStatus']),
-        parking: getValue(row, ['parking']),
-        construction: getValue(row, ['construction', 'status']),
-        amenities: getValue(row, ['amenities', 'amenity']),
-        location: getValue(row, ['location', 'locality', 'areaName']),
-        launchDate: getValue(row, ['launchDate', 'launch date', 'launch']),
-        details: getValue(row, ['details', 'description']),
-        imageUrl: getValue(row, ['imageUrl', 'image', 'images', 'imageUrls']),
+        srNo: row['projectName'] || row['landParcel'] || '', // Use project or parcel as identifier
+        builder: row['builder'] || '',
+        salesPerson: row['salesPerson'] || '',
+        projectName: row['projectName'] || '',
+        landParcel: row['landParcel'] || '',
+        tower: row['tower'] || '',
+        floor: row['floor'] || '',
+        specification: row['specification'] || '',
+        carpet: row['carpet'] || '',
+        price: row['price'] || '',
+        flats: row['flats'] || '',
+        totalUnits: row['totalUnits'] || '',
+        possession: row['possession'] || '',
+        parking: row['parking'] || '',
+        construction: row['construction'] || '',
+        amenities: row['amenities'] || '',
+        location: row['location'] || '',
+        launchDate: row['launchDate'] || '',
+        details: row['details'] || '',
+        imageUrl: row['imageUrl'] || '',
       };
 
-      // Validate that row has required data
-      if (csvRow.builder && csvRow.projectName && csvRow.specification && csvRow.location) {
+      // Validate that row has required data - all must be non-empty
+      if (csvRow.builder?.trim() && csvRow.projectName?.trim() && csvRow.specification?.trim() && csvRow.location?.trim()) {
         data.push(csvRow);
       }
     }
