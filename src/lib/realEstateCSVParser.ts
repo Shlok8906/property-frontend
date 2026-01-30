@@ -160,8 +160,11 @@ export class RealEstateCSVParser {
         }
       }
 
+      console.log(`📋 Column ${index}: "${col}" → normalized: "${normalized}" → mapped: "${mapped}"`);
       headers[index] = mapped;
     });
+
+    console.log('✅ Final Headers:', headers);
 
     return headers;
   }
