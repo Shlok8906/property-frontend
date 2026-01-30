@@ -34,6 +34,7 @@ interface CSVProperty {
   builder: string;
   salesPerson: string;
   projectName: string;
+  landParcel?: string;
   tower?: string;
   floor?: string;
   specification: string;
@@ -47,18 +48,21 @@ interface CSVProperty {
   amenities: string;
   location: string;
   launchDate?: string;
+  details?: string;
+  imageUrl?: string;
 }
 
 interface MappedProperty {
   title: string;
   description: string;
   location: string;
-  price: string;
+  price: number;
   type: string;
   category: string;
   purpose: string;
   bhk: string;
   area: string;
+  carpetArea?: string;
   furnishing: string;
   builder: string;
   possession: string;
@@ -66,6 +70,14 @@ interface MappedProperty {
   construction: string;
   amenities: string[];
   restrictions: string[];
+  projectName?: string;
+  specification?: string;
+  tower?: string;
+  units?: number;
+  salesPerson?: string;
+  status?: 'active' | 'hidden';
+  image_url?: string;
+  images?: string[];
   rawData: CSVProperty;
 }
 
@@ -102,13 +114,14 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
 
   const parseCSV = (text: string): CSVProperty[] => {
     const lines = text.split('\n');
-    const headers = lines[0].split('\t').map(h => h.trim());
+    const delimiter = lines[0].includes('\t') ? '\t' : ',';
+    const headers = lines[0].split(delimiter).map(h => h.trim());
     const data: CSVProperty[] = [];
 
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
 
-      const values = lines[i].split('\t').map(v => v.trim());
+      const values = lines[i].split(delimiter).map(v => v.trim());
       
       // Map by header names instead of position
       const row: any = {};
@@ -121,6 +134,7 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
         builder: row['builder'] || '',
         salesPerson: row['salesPerson'] || '',
         projectName: row['projectName'] || '',
+        landParcel: row['landParcel'] || '',
         tower: row['tower'] || '',
         floor: row['floor'] || '',
         specification: row['bhkType'] || '',
@@ -134,6 +148,8 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
         amenities: row['amenities'] || '',
         location: row['location'] || '',
         launchDate: row['launchDate'] || '',
+        details: row['details'] || '',
+        imageUrl: row['imageUrl'] || '',
       };
 
       // Validate that row has required data
@@ -171,9 +187,17 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
       ? csv.amenities.split(',').map(a => a.trim()).filter(Boolean)
       : [];
 
+    const description = csv.details
+      ? csv.details
+      : `${csv.specification} property in ${csv.projectName}. ${csv.construction ? `Construction: ${csv.construction}. ` : ''}Located at ${csv.location}.`;
+
+    const images = csv.imageUrl
+      ? csv.imageUrl.split(/[,|;]/).map(u => u.trim()).filter(Boolean)
+      : [];
+
     return {
       title: `${csv.specification} at ${csv.projectName}${csv.tower ? ', ' + csv.tower : ''}`,
-      description: `${csv.specification} property in ${csv.projectName}. ${csv.construction ? `Construction: ${csv.construction}. ` : ''}Located at ${csv.location}.`,
+      description,
       location: csv.location,
       price: priceNum,
       type: 'apartment',
@@ -195,6 +219,8 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
       units: csv.totalUnits ? parseInt(csv.totalUnits) : 0,
       salesPerson: csv.salesPerson,
       status: 'active',
+      image_url: images[0],
+      images,
       rawData: csv,
     };
   };
