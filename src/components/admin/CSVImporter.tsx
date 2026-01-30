@@ -136,7 +136,8 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
         launchDate: row['launchDate'] || '',
       };
 
-      if (csvRow.builder && csvRow.projectName && csvRow.location) {
+      // Validate that row has required data
+      if (csvRow.builder && csvRow.projectName && csvRow.specification && csvRow.location) {
         data.push(csvRow);
       }
     }
@@ -145,20 +146,25 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
   };
 
   const mapToProperty = (csv: CSVProperty): MappedProperty => {
-    // Extract BHK from specification (e.g., "3BHK" -> "3BHK")
-    const bhkMatch = csv.specification.match(/(\d+\.?\d*)(BHK|bhk)?/i);
-    const bhk = bhkMatch ? bhkMatch[0] : '2BHK';
+    // Extract BHK from specification (e.g., "3BHK" -> "3BHK", "2 BHK" -> "2BHK")
+    const bhkMatch = csv.specification.match(/(\d+\.?\d*)\s*(BHK|bhk)?/i);
+    const bhk = bhkMatch ? `${bhkMatch[1]}BHK` : csv.specification || '2BHK';
 
-    // Extract price (remove L, Cr, and convert)
-    const priceStr = csv.price
-      .replace(/L/gi, '00000')
-      .replace(/cr/gi, '0000000')
-      .replace(/,/gi, '')
-      .trim();
+    // Parse price
+    let priceNum = 0;
+    if (csv.price) {
+      const priceStr = csv.price.toString().toLowerCase();
+      if (priceStr.includes('cr')) {
+        priceNum = parseFloat(priceStr.replace(/[^\d.]/g, '')) * 10000000;
+      } else if (priceStr.includes('l')) {
+        priceNum = parseFloat(priceStr.replace(/[^\d.]/g, '')) * 100000;
+      } else {
+        priceNum = parseFloat(priceStr.replace(/[^\d.]/g, ''));
+      }
+    }
 
     // Extract area/carpet size
-    const areaMatch = csv.carpet.match(/(\d+)/);
-    const area = areaMatch ? areaMatch[1] : '0';
+    const carpetArea = csv.carpet || '';
 
     // Extract amenities array
     const amenitiesArray = csv.amenities
@@ -166,15 +172,16 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
       : [];
 
     return {
-      title: `${csv.specification} at ${csv.projectName}, ${csv.tower || ''}`,
-      description: `${csv.specification} property in ${csv.projectName}. ${csv.construction ? `Construction: ${csv.construction}` : ''}`,
+      title: `${csv.specification} at ${csv.projectName}${csv.tower ? ', ' + csv.tower : ''}`,
+      description: `${csv.specification} property in ${csv.projectName}. ${csv.construction ? `Construction: ${csv.construction}. ` : ''}Located at ${csv.location}.`,
       location: csv.location,
-      price: csv.price,
+      price: priceNum,
       type: 'apartment',
       category: 'residential',
       purpose: 'sell',
       bhk,
-      area,
+      area: carpetArea,
+      carpetArea: carpetArea,
       furnishing: 'unfurnished',
       builder: csv.builder,
       possession: csv.possession,
@@ -182,6 +189,12 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
       construction: csv.construction,
       amenities: amenitiesArray,
       restrictions: [],
+      projectName: csv.projectName,
+      specification: csv.specification,
+      tower: csv.tower,
+      units: csv.totalUnits ? parseInt(csv.totalUnits) : 0,
+      salesPerson: csv.salesPerson,
+      status: 'active',
       rawData: csv,
     };
   };
