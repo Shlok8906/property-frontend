@@ -38,6 +38,8 @@ const mapToProperties = (
       possession: config.possession,
       amenities: config.amenities,
       salesPerson: project?.salesPersonName,
+      images: config.imageUrls || [],
+      image_url: config.imageUrls?.[0] || undefined,
     };
   });
 };

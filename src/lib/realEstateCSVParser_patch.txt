@@ -1,0 +1,13 @@
+Add this method after parseAmenities method (around line 519):
+
+  /**
+   * Parse image URLs from CSV field
+   * Handles comma, pipe, or semicolon separated URLs
+   */
+  private parseImageUrls(imageUrlStr: string): string[] {
+    if (!imageUrlStr) return [];
+    return imageUrlStr
+      .split(/[,|;]/)
+      .map((url) => url.trim())
+      .filter((url) => url.startsWith('http://') || url.startsWith('https://'));
+  }

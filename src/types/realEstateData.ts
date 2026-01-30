@@ -69,6 +69,7 @@ export interface UnitConfiguration {
   
   // Metadata
   details?: string; // Config-specific notes
+  imageUrls?: string[]; // Array of image URLs from CSV
   rawCsvRow?: Record<string, string>; // Original CSV row data
 }
 
@@ -97,6 +98,7 @@ export interface CSVRowData {
   launchDate?: string;
   floorRise?: string;
   details?: string;
+  imageUrl?: string; // Image URLs (comma/pipe/semicolon separated)
 }
 
 /**

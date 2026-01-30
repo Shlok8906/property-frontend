@@ -511,6 +511,17 @@ export class RealEstateCSVParser {
   }
 
   /**
+   * Parse image URLs from CSV field
+   * Handles comma, pipe, or semicolon separated URLs
+   */
+  private parseImageUrls(imageUrlStr: string): string[] {
+    if (!imageUrlStr) return [];
+    return imageUrlStr
+      .split(/[,|;]/)
+      .map((url) => url.trim())
+      .filter((url) => url.startsWith('http://') || url.startsWith('https://'));
+  }
+  /**
    * Generate unique project ID
    */
   private generateProjectId(builder: string, projectName: string): string {
