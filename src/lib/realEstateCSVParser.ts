@@ -268,6 +268,12 @@ export class RealEstateCSVParser {
         case 'description':
           row.details = value;
           break;
+        case 'imageurl':
+        case 'imageurls':
+        case 'image':
+        case 'images':
+          row.imageUrl = value;
+          break;
       }
     });
 
@@ -336,6 +342,7 @@ export class RealEstateCSVParser {
     const carpetAreas = this.parseCarpetAreas(row.carpet || '');
     const priceRange = this.parsePriceRange(row.price || '');
     const amenities = this.parseAmenities(row.amenities || '');
+    const imageUrls = this.parseImageUrls(row.imageUrl || '');
     const totalUnits = parseInt(row.totalUnits || '0') || 0;
 
     // Determine status from details
@@ -369,6 +376,7 @@ export class RealEstateCSVParser {
       status,
       furnitureType: 'unfurnished',
       details: row.details,
+      imageUrls,
       rawCsvRow: Object.fromEntries(
         Object.entries(row).map(([key, value]) => [key, value ?? ''])
       ) as Record<string, string>,
