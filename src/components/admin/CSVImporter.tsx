@@ -78,23 +78,26 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
   const { toast } = useToast();
 
   const [columnMapping, setColumnMapping] = useState({
-    srNo: 'Sr Nos',
-    builder: 'Builder',
-    salesPerson: 'Sales Person',
-    projectName: 'Project name',
-    tower: 'Tower',
-    floor: 'Floor',
-    specification: 'Specification',
-    carpet: 'Carpet',
-    price: 'Price',
-    flats: 'Flat/Floor',
-    totalUnits: 'Total Units',
-    possession: 'Possession',
-    parking: 'Parking',
-    construction: 'Construction',
-    amenities: 'Amenities',
-    location: 'Location',
-    launchDate: 'Launch Date',
+    projectId: 'projectId',
+    builder: 'builder',
+    salesPerson: 'salesPerson',
+    projectName: 'projectName',
+    landParcel: 'landParcel',
+    tower: 'tower',
+    construction: 'construction',
+    amenities: 'amenities',
+    location: 'location',
+    possession: 'possession',
+    launchDate: 'launchDate',
+    bhkType: 'bhkType',
+    carpet: 'carpet',
+    price: 'price',
+    floor: 'floor',
+    flatPerFloor: 'flatPerFloor',
+    totalUnits: 'totalUnits',
+    parking: 'parking',
+    details: 'details',
+    imageUrl: 'imageUrl',
   });
 
   const parseCSV = (text: string): CSVProperty[] => {
@@ -106,28 +109,35 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
       if (!lines[i].trim()) continue;
 
       const values = lines[i].split('\t').map(v => v.trim());
-      const row: CSVProperty = {
-        srNo: values[0] || '',
-        builder: values[1] || '',
-        salesPerson: values[2] || '',
-        projectName: values[3] || '',
-        tower: values[4] || '',
-        floor: values[5] || '',
-        specification: values[6] || '',
-        carpet: values[7] || '',
-        price: values[8] || '',
-        flats: values[9] || '',
-        totalUnits: values[10] || '',
-        possession: values[11] || '',
-        parking: values[12] || '',
-        construction: values[13] || '',
-        amenities: values[14] || '',
-        location: values[15] || '',
-        launchDate: values[16] || '',
+      
+      // Map by header names instead of position
+      const row: any = {};
+      headers.forEach((header, index) => {
+        row[header] = values[index] || '';
+      });
+
+      const csvRow: CSVProperty = {
+        srNo: row['projectId'] || '',
+        builder: row['builder'] || '',
+        salesPerson: row['salesPerson'] || '',
+        projectName: row['projectName'] || '',
+        tower: row['tower'] || '',
+        floor: row['floor'] || '',
+        specification: row['bhkType'] || '',
+        carpet: row['carpet'] || '',
+        price: row['price'] || '',
+        flats: row['flatPerFloor'] || '',
+        totalUnits: row['totalUnits'] || '',
+        possession: row['possession'] || '',
+        parking: row['parking'] || '',
+        construction: row['construction'] || '',
+        amenities: row['amenities'] || '',
+        location: row['location'] || '',
+        launchDate: row['launchDate'] || '',
       };
 
-      if (row.builder) {
-        data.push(row);
+      if (csvRow.builder && csvRow.projectName && csvRow.location) {
+        data.push(csvRow);
       }
     }
 
