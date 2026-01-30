@@ -277,13 +277,18 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
     const rawHeaders = lines[0].split(delimiter).map(h => h.trim());
     const headerMapping: Record<string, string> = {}; // normalized header -> field name
     
+    console.log('📋 Raw Headers:', rawHeaders);
+    
     rawHeaders.forEach(rawHeader => {
       const normalized = normalizeHeader(rawHeader);
       const fieldName = mapHeaderToField(normalized);
+      console.log(`Header: "${rawHeader}" → Normalized: "${normalized}" → Field: "${fieldName}"`);
       if (fieldName) {
         headerMapping[normalized] = fieldName;
       }
     });
+
+    console.log('🎯 Final Header Mapping:', headerMapping);
 
     const data: CSVProperty[] = [];
 
@@ -301,6 +306,8 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
           row[fieldName] = values[index] || '';
         }
       });
+
+      console.log(`📝 Row ${i} Extracted Data:`, row);
 
       const csvRow: CSVProperty = {
         srNo: row['projectName'] || row['landParcel'] || '', // Use project or parcel as identifier
@@ -326,11 +333,25 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
       };
 
       // Validate that row has required data - all must be non-empty
-      if (csvRow.builder?.trim() && csvRow.projectName?.trim() && csvRow.specification?.trim() && csvRow.location?.trim()) {
+      const builderOk = csvRow.builder?.trim();
+      const projectNameOk = csvRow.projectName?.trim();
+      const specOk = csvRow.specification?.trim();
+      const locationOk = csvRow.location?.trim();
+
+      console.log(`✅ Validation Row ${i}:`, {
+        builder: builderOk ? '✓' : '✗',
+        projectName: projectNameOk ? '✓' : '✗',
+        specification: specOk ? '✓' : '✗',
+        location: locationOk ? '✓' : '✗',
+        values: { builder: csvRow.builder, projectName: csvRow.projectName, specification: csvRow.specification, location: csvRow.location }
+      });
+
+      if (builderOk && projectNameOk && specOk && locationOk) {
         data.push(csvRow);
       }
     }
 
+    console.log(`📊 Total Valid Rows: ${data.length} out of ${lines.length - 1}`);
     return data;
   };
 
