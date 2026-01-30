@@ -561,7 +561,7 @@ export default function PropertyDetail() {
                     className="w-full"
                     onClick={() => {
                       const message = `Hi, I'm interested in ${property.title} at ${property.location}`;
-                      const phone = property.salesPerson || '919876543210';
+                      const phone = '919168596655';
                       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
                     }}
                   >
