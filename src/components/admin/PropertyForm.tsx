@@ -48,6 +48,7 @@ export function PropertyForm({ property, onSave, onCancel }: PropertyFormProps) 
     amenities: [] as string[],
     restrictions: [] as string[],
     images: [] as string[],
+    status: 'active' as 'active' | 'hidden',
   });
 
   const [loading, setLoading] = useState(false);
@@ -86,6 +87,7 @@ export function PropertyForm({ property, onSave, onCancel }: PropertyFormProps) 
         amenities: amenitiesArray,
         restrictions: restrictionsArray,
         images: imagesArray,
+        status: property.status || 'active',
       });
     }
   }, [property]);
@@ -183,6 +185,7 @@ export function PropertyForm({ property, onSave, onCancel }: PropertyFormProps) 
       ...formData,
       image_url: formData.images.length > 0 ? formData.images[0] : undefined,
       images: formData.images,
+      status: formData.status || 'active',
     };
 
     try {
