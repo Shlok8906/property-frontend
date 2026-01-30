@@ -45,6 +45,12 @@ export function PropertyForm({ property, onSave, onCancel }: PropertyFormProps) 
     flooring: 'ceramic',
     builder: '',
     possession: '',
+    projectName: '',
+    specification: '',
+    tower: '',
+    carpetArea: '',
+    units: 0,
+    salesPerson: '',
     amenities: [] as string[],
     restrictions: [] as string[],
     images: [] as string[],
@@ -84,6 +90,12 @@ export function PropertyForm({ property, onSave, onCancel }: PropertyFormProps) 
         flooring: property.flooring || 'ceramic',
         builder: property.builder || '',
         possession: property.possession || '',
+        projectName: property.projectName || '',
+        specification: property.specification || '',
+        tower: property.tower || '',
+        carpetArea: property.carpetArea || '',
+        units: property.units || 0,
+        salesPerson: property.salesPerson || '',
         amenities: amenitiesArray,
         restrictions: restrictionsArray,
         images: imagesArray,
@@ -482,6 +494,67 @@ export function PropertyForm({ property, onSave, onCancel }: PropertyFormProps) 
                 value={formData.possession}
                 onChange={(e) => handleChange('possession', e.target.value)}
                 placeholder="e.g., Ready to move"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="projectName">Project Name</Label>
+              <Input
+                id="projectName"
+                value={formData.projectName}
+                onChange={(e) => handleChange('projectName', e.target.value)}
+                placeholder="e.g., Lodha Meridian"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="tower">Tower/Block</Label>
+              <Input
+                id="tower"
+                value={formData.tower}
+                onChange={(e) => handleChange('tower', e.target.value)}
+                placeholder="e.g., Tower A"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="specification">Specification</Label>
+              <Input
+                id="specification"
+                value={formData.specification}
+                onChange={(e) => handleChange('specification', e.target.value)}
+                placeholder="e.g., 2BHK Premium"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="carpetArea">Carpet Area</Label>
+              <Input
+                id="carpetArea"
+                value={formData.carpetArea}
+                onChange={(e) => handleChange('carpetArea', e.target.value)}
+                placeholder="e.g., 850 sq ft"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="units">Units Available</Label>
+              <Input
+                id="units"
+                type="number"
+                value={formData.units || ''}
+                onChange={(e) => handleChange('units', parseInt(e.target.value) || 0)}
+                placeholder="e.g., 10"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="salesPerson">Sales Contact</Label>
+              <Input
+                id="salesPerson"
+                value={formData.salesPerson}
+                onChange={(e) => handleChange('salesPerson', e.target.value)}
+                placeholder="e.g., John Doe"
               />
             </div>
           </div>
