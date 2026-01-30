@@ -501,7 +501,7 @@ export class RealEstateCSVParser {
 
   /**
    * Parse amenities from string
-   * Handles: comma-separated, "All Amenities", etc.
+   * Handles: comma-separated, pipe-separated, "All Amenities", etc.
    */
   private parseAmenities(amenitiesStr: string): string[] {
     if (!amenitiesStr) return [];
@@ -511,9 +511,9 @@ export class RealEstateCSVParser {
       return ['All Amenities'];
     }
 
-    // Split by comma and clean
+    // Split by comma, pipe, or semicolon and clean
     return amenitiesStr
-      .split(',')
+      .split(/[,|;]/)
       .map(a => a.trim())
       .filter(a => a.length > 0);
   }
