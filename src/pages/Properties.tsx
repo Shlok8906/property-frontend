@@ -37,6 +37,11 @@ function PropertyCard({ property }: { property: Property }) {
   const imageUrl = Array.isArray(property.images) && property.images.length > 0 
     ? property.images[0] 
     : property.image_url || null;
+  
+  // Debug: Log image data
+  if (!imageUrl) {
+    console.log('No image for property:', property.title, 'images:', property.images, 'image_url:', property.image_url);
+  }
 
   return (
     <Link to={`/properties/${property._id || property.id}`}>

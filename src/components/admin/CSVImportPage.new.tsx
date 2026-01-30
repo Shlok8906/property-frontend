@@ -40,6 +40,7 @@ const mapToProperties = (
       salesPerson: project?.salesPersonName,
       images: config.imageUrls || [],
       image_url: config.imageUrls?.[0] || undefined,
+      status: 'active',
     };
   });
 };
