@@ -112,11 +112,28 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
     imageUrl: 'imageUrl',
   });
 
+  const normalizeHeader = (header: string) =>
+    header.toLowerCase().replace(/\s|_|-/g, '');
+
+  const detectDelimiter = (headerLine: string) => {
+    if (headerLine.includes('\t')) return '\t';
+    if (headerLine.includes(';')) return ';';
+    return ',';
+  };
+
+  const getValue = (row: Record<string, string>, aliases: string[]) => {
+    for (const alias of aliases) {
+      const key = normalizeHeader(alias);
+      if (row[key]) return row[key];
+    }
+    return '';
+  };
+
   const parseCSV = (text: string): CSVProperty[] => {
-    const lines = text.split('\n');
-    const delimiter = lines[0].includes('\t') ? '\t' : ',';
-    const normalizeHeader = (header: string) =>
-      header.toLowerCase().replace(/\s|_|-/g, '');
+    const lines = text.split(/\r?\n/);
+    if (!lines[0]) return [];
+
+    const delimiter = detectDelimiter(lines[0]);
     const headers = lines[0]
       .split(delimiter)
       .map(h => h.trim())
@@ -129,32 +146,32 @@ export function CSVImporter({ onImport }: { onImport: (properties: MappedPropert
       const values = lines[i].split(delimiter).map(v => v.trim());
       
       // Map by header names instead of position
-      const row: any = {};
+      const row: Record<string, string> = {};
       headers.forEach((header, index) => {
         row[header] = values[index] || '';
       });
 
       const csvRow: CSVProperty = {
-        srNo: row['projectid'] || '',
-        builder: row['builder'] || '',
-        salesPerson: row['salesperson'] || '',
-        projectName: row['projectname'] || '',
-        landParcel: row['landparcel'] || '',
-        tower: row['tower'] || '',
-        floor: row['floor'] || '',
-        specification: row['bhktype'] || '',
-        carpet: row['carpet'] || '',
-        price: row['price'] || '',
-        flats: row['flatperfloor'] || '',
-        totalUnits: row['totalunits'] || '',
-        possession: row['possession'] || '',
-        parking: row['parking'] || '',
-        construction: row['construction'] || '',
-        amenities: row['amenities'] || '',
-        location: row['location'] || '',
-        launchDate: row['launchdate'] || '',
-        details: row['details'] || '',
-        imageUrl: row['imageurl'] || '',
+        srNo: getValue(row, ['projectId', 'project', 'id']),
+        builder: getValue(row, ['builder']),
+        salesPerson: getValue(row, ['salesPerson', 'sales person', 'sales']),
+        projectName: getValue(row, ['projectName', 'project name', 'project']),
+        landParcel: getValue(row, ['landParcel', 'land parcel', 'land']),
+        tower: getValue(row, ['tower', 'block']),
+        floor: getValue(row, ['floor']),
+        specification: getValue(row, ['bhkType', 'bhk', 'specification']),
+        carpet: getValue(row, ['carpet', 'carpetArea', 'area']),
+        price: getValue(row, ['price', 'cost']),
+        flats: getValue(row, ['flatPerFloor', 'flatsPerFloor', 'flat/floor']),
+        totalUnits: getValue(row, ['totalUnits', 'units', 'totalunit']),
+        possession: getValue(row, ['possession', 'possessionStatus']),
+        parking: getValue(row, ['parking']),
+        construction: getValue(row, ['construction', 'status']),
+        amenities: getValue(row, ['amenities', 'amenity']),
+        location: getValue(row, ['location', 'locality', 'areaName']),
+        launchDate: getValue(row, ['launchDate', 'launch date', 'launch']),
+        details: getValue(row, ['details', 'description']),
+        imageUrl: getValue(row, ['imageUrl', 'image', 'images', 'imageUrls']),
       };
 
       // Validate that row has required data
