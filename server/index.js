@@ -81,6 +81,24 @@ const enquirySchema = new mongoose.Schema({
 
 const Enquiry = mongoose.model('Enquiry', enquirySchema);
 
+// Lead Schema
+const leadSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true },
+  phone: { type: String, required: true },
+  propertyType: String,
+  budget: String,
+  location: String,
+  priority: { type: String, enum: ['hot', 'warm', 'cold'], default: 'warm' },
+  source: String,
+  notes: String,
+  conversionPotential: { type: Number, default: 50, min: 0, max: 100 },
+  created_at: { type: Date, default: Date.now },
+  updated_at: { type: Date, default: Date.now }
+});
+
+const Lead = mongoose.model('Lead', leadSchema);
+
 // API Routes
 
 // Get all properties
@@ -288,6 +306,59 @@ app.delete('/api/enquiries/:id', async (req, res) => {
       return res.status(404).json({ error: 'Enquiry not found' });
     }
     res.json({ success: true, message: 'Enquiry deleted' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== LEAD ENDPOINTS =====
+
+// Get all leads
+app.get('/api/leads', async (req, res) => {
+  try {
+    const leads = await Lead.find().sort({ created_at: -1 });
+    res.json(leads);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create lead
+app.post('/api/leads', async (req, res) => {
+  try {
+    const lead = new Lead(req.body);
+    await lead.save();
+    res.status(201).json(lead);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Update lead
+app.put('/api/leads/:id', async (req, res) => {
+  try {
+    const lead = await Lead.findByIdAndUpdate(
+      req.params.id,
+      { ...req.body, updated_at: Date.now() },
+      { new: true }
+    );
+    if (!lead) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+    res.json(lead);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Delete lead
+app.delete('/api/leads/:id', async (req, res) => {
+  try {
+    const lead = await Lead.findByIdAndDelete(req.params.id);
+    if (!lead) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+    res.json({ success: true, message: 'Lead deleted' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

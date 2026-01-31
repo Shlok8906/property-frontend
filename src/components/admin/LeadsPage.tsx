@@ -25,8 +25,10 @@ import {
 import { Search, Phone, Mail, Trash2, Eye, Star, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+
 interface Lead {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   phone: string;
@@ -35,69 +37,10 @@ interface Lead {
   location: string;
   priority: 'hot' | 'warm' | 'cold';
   source: string;
-  createdAt: string;
+  created_at: string;
   notes?: string;
-  conversionPotential: number; // 0-100
+  conversionPotential: number;
 }
-
-// Mock data
-const MOCK_LEADS: Lead[] = [
-  {
-    id: '1',
-    name: 'Rajesh Kumar',
-    email: 'rajesh@example.com',
-    phone: '+91 99876 54321',
-    propertyType: '3BHK Apartment',
-    budget: '50-60 Lakhs',
-    location: 'Hinjewadi, Baner',
-    priority: 'hot',
-    source: 'Website',
-    createdAt: '2026-01-27',
-    notes: 'Serious buyer, ready to purchase within 2 weeks',
-    conversionPotential: 85,
-  },
-  {
-    id: '2',
-    name: 'Priya Sharma',
-    email: 'priya@example.com',
-    phone: '+91 98765 43210',
-    propertyType: '2BHK Villa',
-    budget: '35-45 Lakhs',
-    location: 'Wakad',
-    priority: 'warm',
-    source: 'Referral',
-    createdAt: '2026-01-26',
-    notes: 'First-time buyer, needs mortgage assistance',
-    conversionPotential: 60,
-  },
-  {
-    id: '3',
-    name: 'Ankit Patel',
-    email: 'ankit@example.com',
-    phone: '+91 87654 32109',
-    propertyType: '4BHK Penthouse',
-    budget: '80-100 Lakhs',
-    location: 'Koregaon Park, Viman Nagar',
-    priority: 'hot',
-    source: 'Phone Call',
-    createdAt: '2026-01-25',
-    conversionPotential: 75,
-  },
-  {
-    id: '4',
-    name: 'Sneha Desai',
-    email: 'sneha@example.com',
-    phone: '+91 76543 21098',
-    propertyType: '1BHK Apartment',
-    budget: '20-25 Lakhs',
-    location: 'Hadapsar',
-    priority: 'cold',
-    source: 'Email Campaign',
-    createdAt: '2026-01-24',
-    notes: 'Just browsing, no immediate plans',
-    conversionPotential: 25,
-  },
-];
 
 const PRIORITY_COLORS: Record<string, string> = {
   hot: 'status-new',
@@ -112,15 +55,40 @@ const PRIORITY_LABELS: Record<string, string> = {
 };
 
 export function LeadsPage() {
-  const [leads, setLeads] = useState<Lead[]>(MOCK_LEADS);
-  const [filteredLeads, setFilteredLeads] = useState<Lead[]>(MOCK_LEADS);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showNotesDialog, setShowNotesDialog] = useState(false);
   const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // Fetch leads from API
+  useEffect(() => {
+    fetchLeads();
+  }, []);
+
+  const fetchLeads = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE_URL}/api/leads`);
+      if (!response.ok) throw new Error('Failed to fetch leads');
+      const data = await response.json();
+      setLeads(data);
+      setFilteredLeads(data);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load leads',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter leads
   useEffect(() => {
@@ -149,40 +117,77 @@ export function LeadsPage() {
     setFilteredLeads(filtered);
   }, [searchTerm, priorityFilter, leads]);
 
-  const handleDeleteLead = (id: string) => {
-    if (confirm('Are you sure you want to delete this lead?')) {
-      setLeads(leads.filter((l) => l.id !== id));
+  const handleDeleteLead = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this lead?')) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/leads/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete lead');
+      
+      setLeads(leads.filter((l) => l._id !== id));
       toast({
         title: 'Success',
         description: 'Lead deleted successfully',
       });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete lead',
+        variant: 'destructive',
+      });
     }
   };
 
-  const handlePriorityChange = (id: string, newPriority: string) => {
-    setLeads(
-      leads.map((l) =>
-        l.id === id ? { ...l, priority: newPriority as any } : l
-      )
-    );
-    toast({
-      title: 'Success',
-      description: `Priority updated to ${PRIORITY_LABELS[newPriority]}`,
-    });
+  const handlePriorityChange = async (id: string, newPriority: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/leads/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priority: newPriority }),
+      });
+      if (!response.ok) throw new Error('Failed to update priority');
+      
+      const updatedLead = await response.json();
+      setLeads(leads.map((l) => (l._id === id ? updatedLead : l)));
+      toast({
+        title: 'Success',
+        description: `Priority updated to ${PRIORITY_LABELS[newPriority]}`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update priority',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleSaveNotes = () => {
-    if (selectedLead) {
-      setLeads(
-        leads.map((l) =>
-          l.id === selectedLead.id ? { ...l, notes } : l
-        )
-      );
+  const handleSaveNotes = async () => {
+    if (!selectedLead) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/leads/${selectedLead._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes }),
+      });
+      if (!response.ok) throw new Error('Failed to save notes');
+      
+      const updatedLead = await response.json();
+      setLeads(leads.map((l) => (l._id === selectedLead._id ? updatedLead : l)));
       toast({
         title: 'Success',
         description: 'Notes saved successfully',
       });
       setShowNotesDialog(false);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save notes',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -252,7 +257,17 @@ export function LeadsPage() {
         {/* Filters */}
         <Card className="card-premium">
           <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row gap-4">
+            {loading ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="text-muted-foreground">Loading leads...</div>
+              </div>
+            ) : filteredLeads.length === 0 && leads.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No leads yet. Start adding leads to track your sales pipeline.
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -301,7 +316,7 @@ export function LeadsPage() {
                 <TableBody>
                   {filteredLeads.length > 0 ? (
                     filteredLeads.map((lead) => (
-                      <TableRow key={lead.id}>
+                      <TableRow key={lead._id}>
                         <TableCell>
                           <div>
                             <p className="font-medium">{lead.name}</p>
@@ -330,7 +345,7 @@ export function LeadsPage() {
                         <TableCell>
                           <Select
                             value={lead.priority}
-                            onValueChange={(value) => handlePriorityChange(lead.id, value)}
+                            onValueChange={(value) => handlePriorityChange(lead._id, value)}
                           >
                             <SelectTrigger className="w-32">
                               <SelectValue />
@@ -380,7 +395,7 @@ export function LeadsPage() {
                               size="sm"
                               variant="outline"
                               className="text-destructive hover:text-destructive"
-                              onClick={() => handleDeleteLead(lead.id)}
+                              onClick={() => handleDeleteLead(lead._id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -398,6 +413,8 @@ export function LeadsPage() {
                 </TableBody>
               </Table>
             </div>
+            </>
+            )}
           </CardContent>
         </Card>
       </div>
