@@ -14,6 +14,9 @@ const mapToProperties = (
   projects: RealEstateProject[],
   configurations: UnitConfiguration[],
 ): Omit<Property, '_id' | 'created_at' | 'updated_at'>[] => {
+  console.log('🔄 mapToProperties called with', configurations.length, 'configurations');
+  console.log('First config:', configurations[0]);
+  
   return configurations.map((config) => {
     const project = projects.find((p) => p.projectId === config.projectId);
     const priceLakhs = config.priceRange?.min ?? 0;
@@ -43,7 +46,11 @@ const mapToProperties = (
       status: 'active',
     };
 
-    console.log(`📦 Property: ${mapped.title}`, { images: mapped.images, image_url: mapped.image_url });
+    console.log(`📦 Mapped: ${mapped.title}`, { 
+      imageUrls: config.imageUrls, 
+      images: mapped.images,
+      image_url: mapped.image_url
+    });
 
     return mapped;
   });
