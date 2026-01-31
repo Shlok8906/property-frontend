@@ -92,6 +92,7 @@ const leadSchema = new mongoose.Schema({
   priority: { type: String, enum: ['hot', 'warm', 'cold'], default: 'warm' },
   source: String,
   notes: String,
+  status: String,
   conversionPotential: { type: Number, default: 50, min: 0, max: 100 },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }

@@ -95,7 +95,6 @@ export function LeadsPage() {
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showNotesDialog, setShowNotesDialog] = useState(false);
@@ -162,16 +161,11 @@ export function LeadsPage() {
       filtered = filtered.filter((l) => l.priority === priorityFilter);
     }
 
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((l) => l.status === statusFilter);
-    }
-
     // Sort by conversion potential (highest first)
     filtered.sort((a, b) => b.conversionPotential - a.conversionPotential);
 
     setFilteredLeads(filtered);
-  }, [searchTerm, priorityFilter, statusFilter, leads]);
+  }, [searchTerm, priorityFilter, leads]);
 
   const handleDeleteLead = async (id: string) => {
     if (!confirm('Are you sure you want to delete this lead?')) return;
@@ -423,27 +417,6 @@ export function LeadsPage() {
                   <SelectItem value="hot">🔥 Hot</SelectItem>
                   <SelectItem value="warm">🌤️ Warm</SelectItem>
                   <SelectItem value="cold">❄️ Cold</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Filter by Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  {LEAD_ACTIONS.LEAD_STATUS.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="separator" disabled>
-                    ────────────────
-                  </SelectItem>
-                  {LEAD_ACTIONS.RESPONSE_STATUS.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
-                    </SelectItem>
-                  ))}
                 </SelectContent>
               </Select>
             </div>
