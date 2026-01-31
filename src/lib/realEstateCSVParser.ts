@@ -361,7 +361,6 @@ export class RealEstateCSVParser {
       length: imageUrls ? imageUrls.length : 0 
     });
 
-    const config = {
     let status: 'available' | 'sold-out' | 'launching-soon' | 'future-phase' = 'available';
     if (row.details?.toLowerCase().includes('sold out')) {
       status = 'sold-out';
