@@ -257,17 +257,7 @@ export function LeadsPage() {
         {/* Filters */}
         <Card className="card-premium">
           <CardContent className="pt-6">
-            {loading ? (
-              <div className="flex justify-center items-center py-8">
-                <div className="text-muted-foreground">Loading leads...</div>
-              </div>
-            ) : filteredLeads.length === 0 && leads.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No leads yet. Start adding leads to track your sales pipeline.
-              </div>
-            ) : (
-              <>
-                <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -294,126 +284,130 @@ export function LeadsPage() {
           </CardContent>
         </Card>
 
-        {/* Leads Table */}
         <Card className="card-premium overflow-hidden">
           <CardHeader>
             <CardTitle>Lead List</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Property Type</TableHead>
-                    <TableHead>Budget</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Potential</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredLeads.length > 0 ? (
-                    filteredLeads.map((lead) => (
-                      <TableRow key={lead._id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{lead.name}</p>
-                            <p className="text-sm text-muted-foreground">{lead.source}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1 text-sm">
-                              <Mail className="h-3 w-3" />
-                              {lead.email}
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="text-muted-foreground">Loading leads...</div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Property Type</TableHead>
+                      <TableHead>Budget</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Potential</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredLeads.length > 0 ? (
+                      filteredLeads.map((lead) => (
+                        <TableRow key={lead._id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{lead.name}</p>
+                              <p className="text-sm text-muted-foreground">{lead.source}</p>
                             </div>
-                            <div className="flex items-center gap-1 text-sm">
-                              <Phone className="h-3 w-3" />
-                              {lead.phone}
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1 text-sm">
+                                <Mail className="h-3 w-3" />
+                                {lead.email}
+                              </div>
+                              <div className="flex items-center gap-1 text-sm">
+                                <Phone className="h-3 w-3" />
+                                {lead.phone}
+                              </div>
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <p className="text-sm font-medium">{lead.propertyType}</p>
-                          <p className="text-xs text-muted-foreground">{lead.location}</p>
-                        </TableCell>
-                        <TableCell>
-                          <p className="font-medium">{lead.budget}</p>
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={lead.priority}
-                            onValueChange={(value) => handlePriorityChange(lead._id, value)}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="hot">🔥 Hot</SelectItem>
-                              <SelectItem value="warm">🌤️ Warm</SelectItem>
-                              <SelectItem value="cold">❄️ Cold</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <div className="w-20 bg-muted rounded-full h-2">
-                              <div
-                                className="bg-gradient-success h-2 rounded-full"
-                                style={{ width: `${lead.conversionPotential}%` }}
-                              />
+                          </TableCell>
+                          <TableCell>
+                            <p className="text-sm font-medium">{lead.propertyType}</p>
+                            <p className="text-xs text-muted-foreground">{lead.location}</p>
+                          </TableCell>
+                          <TableCell>
+                            <p className="font-medium">{lead.budget}</p>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={lead.priority}
+                              onValueChange={(value) => handlePriorityChange(lead._id, value)}
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="hot">🔥 Hot</SelectItem>
+                                <SelectItem value="warm">🌤️ Warm</SelectItem>
+                                <SelectItem value="cold">❄️ Cold</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="w-full bg-muted rounded-full h-2">
+                                <div
+                                  className="h-2 rounded-full bg-gradient-to-r from-primary to-primary/50"
+                                  style={{ width: `${lead.conversionPotential}%` }}
+                                />
+                              </div>
+                              <span className="text-sm font-medium">
+                                {lead.conversionPotential}%
+                              </span>
                             </div>
-                            <span className="text-sm font-medium ml-2">{lead.conversionPotential}%</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedLead(lead);
-                                setShowDetailsDialog(true);
-                              }}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedLead(lead);
-                                setNotes(lead.notes || '');
-                                setShowNotesDialog(true);
-                              }}
-                            >
-                              <Star className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => handleDeleteLead(lead._id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedLead(lead);
+                                  setShowDetailsDialog(true);
+                                }}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedLead(lead);
+                                  setNotes(lead.notes || '');
+                                  setShowNotesDialog(true);
+                                }}
+                              >
+                                <Star className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                onClick={() => handleDeleteLead(lead._id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8">
+                          <p className="text-muted-foreground">No leads found</p>
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
-                        <p className="text-muted-foreground">No leads found</p>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            </>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
