@@ -22,8 +22,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, Phone, Mail, Trash2, Eye, Star, TrendingUp } from 'lucide-react';
+import { Search, Phone, Mail, Trash2, Eye, Star, TrendingUp, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://property-frontend-80y9.onrender.com';
 
@@ -40,7 +48,31 @@ interface Lead {
   created_at: string;
   notes?: string;
   conversionPotential: number;
+  status?: string;
 }
+
+const LEAD_ACTIONS = {
+  COMMUNICATION: [
+    { label: 'View Contact', icon: '👁️' },
+    { label: 'Chat on WhatsApp', icon: '💬' },
+    { label: 'Reply to', icon: '↩️' },
+  ],
+  RESPONSE_STATUS: [
+    { label: 'Not Answering', value: 'not_answering', color: 'text-orange-500' },
+    { label: 'No Requirement', value: 'no_requirement', color: 'text-gray-500' },
+    { label: 'Budget Mismatch', value: 'budget_mismatch', color: 'text-red-500' },
+    { label: 'Locality Mismatch', value: 'locality_mismatch', color: 'text-yellow-500' },
+    { label: 'Broker', value: 'broker', color: 'text-blue-500' },
+    { label: 'Already Purchased', value: 'already_purchased', color: 'text-gray-600' },
+  ],
+  LEAD_STATUS: [
+    { label: 'Interested', value: 'interested', color: 'text-green-500' },
+    { label: 'Followup / Callback', value: 'followup', color: 'text-blue-500' },
+    { label: 'Site Visit', value: 'site_visit', color: 'text-purple-500' },
+    { label: 'Deal Success', value: 'deal_success', color: 'text-green-600' },
+    { label: 'Rejected', value: 'rejected', color: 'text-red-600' },
+  ],
+};
 
 const PRIORITY_COLORS: Record<string, string> = {
   hot: 'status-new',
@@ -172,6 +204,34 @@ export function LeadsPage() {
       toast({
         title: 'Error',
         description: 'Failed to update priority',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleStatusUpdate = async (id: string, newStatus: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/leads/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!response.ok) throw new Error('Failed to update status');
+      
+      const updatedLead = await response.json();
+      setLeads(leads.map((l) => (l._id === id ? updatedLead : l)));
+      
+      const statusLabel = [...LEAD_ACTIONS.LEAD_STATUS, ...LEAD_ACTIONS.RESPONSE_STATUS]
+        .find(s => s.value === newStatus)?.label || newStatus;
+      
+      toast({
+        title: 'Success',
+        description: `Status updated to ${statusLabel}`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update status',
         variant: 'destructive',
       });
     }
@@ -377,6 +437,7 @@ export function LeadsPage() {
                       <TableHead>Property Type</TableHead>
                       <TableHead>Budget</TableHead>
                       <TableHead>Priority</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead>Potential</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -426,6 +487,17 @@ export function LeadsPage() {
                             </Select>
                           </TableCell>
                           <TableCell>
+                            {lead.status ? (
+                              <Badge variant="secondary" className="text-xs">
+                                {lead.status.replace(/_/g, ' ')}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs text-muted-foreground">
+                                No status
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
                             <div className="flex items-center gap-2">
                               <div className="w-full bg-muted rounded-full h-2">
                                 <div
@@ -440,6 +512,37 @@ export function LeadsPage() {
                           </TableCell>
                           <TableCell>
                             <div className="flex justify-end gap-2">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button size="sm" variant="outline" className="gap-1">
+                                    Actions
+                                    <ChevronDown className="h-3 w-3" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56">
+                                  <DropdownMenuLabel>Lead Status</DropdownMenuLabel>
+                                  {LEAD_ACTIONS.LEAD_STATUS.map((action) => (
+                                    <DropdownMenuItem
+                                      key={action.value}
+                                      onClick={() => handleStatusUpdate(lead._id, action.value)}
+                                    >
+                                      <span className={`text-sm ${action.color}`}>{action.label}</span>
+                                    </DropdownMenuItem>
+                                  ))}
+                                  
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuLabel>Response Issues</DropdownMenuLabel>
+                                  {LEAD_ACTIONS.RESPONSE_STATUS.map((action) => (
+                                    <DropdownMenuItem
+                                      key={action.value}
+                                      onClick={() => handleStatusUpdate(lead._id, action.value)}
+                                    >
+                                      <span className={`text-sm ${action.color}`}>{action.label}</span>
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+
                               <Button
                                 size="icon"
                                 variant="outline"
