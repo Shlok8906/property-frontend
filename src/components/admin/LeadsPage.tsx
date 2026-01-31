@@ -48,6 +48,22 @@ const PRIORITY_COLORS: Record<string, string> = {
   cold: 'status-rejected',
 };
 
+const formatBudget = (budget: string): string => {
+  if (!budget) return '-';
+  // If it contains 'Cr', 'L', or '-' then it's already formatted
+  if (budget.includes('Cr') || budget.includes('L') || budget.includes('-')) {
+    return budget;
+  }
+  // If it's a number, try to format it
+  const num = parseFloat(budget);
+  if (isNaN(num)) return budget;
+  // If number is large (over 100), assume it's in lakhs and convert to Cr
+  if (num > 100) {
+    return `₹${(num / 100).toFixed(0)} Cr`;
+  }
+  return `₹${num} Cr`;
+};
+
 const PRIORITY_LABELS: Record<string, string> = {
   hot: '🔥 Hot Lead',
   warm: '🌤️ Warm Lead',
@@ -398,7 +414,7 @@ export function LeadsPage() {
                             <p className="text-xs text-muted-foreground">{lead.location}</p>
                           </TableCell>
                           <TableCell>
-                            <p className="font-medium">{lead.budget}</p>
+                            <p className="font-medium">{formatBudget(lead.budget)}</p>
                           </TableCell>
                           <TableCell>
                             <Select
@@ -515,7 +531,7 @@ export function LeadsPage() {
                 </div>
                 <div>
                   <Label className="text-muted-foreground text-sm">Budget</Label>
-                  <p className="font-medium mt-1">{selectedLead.budget}</p>
+                  <p className="font-medium mt-1">{formatBudget(selectedLead.budget)}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground text-sm">Location Preference</Label>
@@ -648,7 +664,7 @@ export function LeadsPage() {
                   id="budget"
                   value={newLead.budget}
                   onChange={(e) => setNewLead({ ...newLead, budget: e.target.value })}
-                  placeholder="e.g., 50-60 Lakhs"
+                  placeholder="e.g., 50-60, 2 Cr, or 8500000"
                 />
               </div>
             </div>
