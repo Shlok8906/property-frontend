@@ -81,6 +81,15 @@ const PRIORITY_LABELS: Record<string, string> = {
   cold: '❄️ Cold Lead',
 };
 
+// Helper to format status display
+const getStatusLabel = (status: string | undefined): string => {
+  if (!status) return 'No status';
+  
+  const allStatuses = [...LEAD_ACTIONS.LEAD_STATUS, ...LEAD_ACTIONS.RESPONSE_STATUS];
+  const statusObj = allStatuses.find(s => s.value === status);
+  return statusObj?.label || status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+};
+
 export function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
@@ -91,6 +100,7 @@ export function LeadsPage() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showNotesDialog, setShowNotesDialog] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showRejectionMenu, setShowRejectionMenu] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [newLead, setNewLead] = useState({
@@ -509,15 +519,9 @@ export function LeadsPage() {
                             </Select>
                           </TableCell>
                           <TableCell>
-                            {lead.status ? (
-                              <Badge variant="secondary" className="text-xs">
-                                {lead.status.replace(/_/g, ' ')}
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs text-muted-foreground">
-                                No status
-                              </Badge>
-                            )}
+                            <Badge variant="secondary" className="text-xs whitespace-nowrap">
+                              {getStatusLabel(lead.status)}
+                            </Badge>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
@@ -534,7 +538,12 @@ export function LeadsPage() {
                           </TableCell>
                           <TableCell>
                             <div className="flex justify-end gap-2">
-                              <DropdownMenu>
+                              <DropdownMenu 
+                                open={showRejectionMenu === lead._id ? true : undefined}
+                                onOpenChange={(open) => {
+                                  if (!open) setShowRejectionMenu(null);
+                                }}
+                              >
                                 <DropdownMenuTrigger asChild>
                                   <Button size="sm" variant="outline" className="gap-1">
                                     Actions
@@ -542,21 +551,38 @@ export function LeadsPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-56">
-                                  <DropdownMenuLabel>Lead Status</DropdownMenuLabel>
-                                  {LEAD_ACTIONS.LEAD_STATUS.map((action) => (
-                                    <DropdownMenuItem
-                                      key={action.value}
-                                      onClick={() => handleStatusUpdate(lead._id, action.value)}
-                                    >
-                                      <span className="text-sm">{action.label}</span>
-                                    </DropdownMenuItem>
-                                  ))}
-                                  
-                                  {lead.status === 'rejected' && (
+                                  {showRejectionMenu === lead._id ? (
                                     <>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuLabel>Response Issues</DropdownMenuLabel>
+                                      <DropdownMenuLabel className="flex items-center justify-between">
+                                        <span>Response Issues</span>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="h-6 px-2"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowRejectionMenu(null);
+                                          }}
+                                        >
+                                          ← Back
+                                        </Button>
+                                      </DropdownMenuLabel>
                                       {LEAD_ACTIONS.RESPONSE_STATUS.map((action) => (
+                                        <DropdownMenuItem
+                                          key={action.value}
+                                          onClick={() => {
+                                            handleStatusUpdate(lead._id, action.value);
+                                            setShowRejectionMenu(null);
+                                          }}
+                                        >
+                                          <span className="text-sm">{action.label}</span>
+                                        </DropdownMenuItem>
+                                      ))}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <DropdownMenuLabel>Lead Status</DropdownMenuLabel>
+                                      {LEAD_ACTIONS.LEAD_STATUS.filter(a => a.value !== 'rejected').map((action) => (
                                         <DropdownMenuItem
                                           key={action.value}
                                           onClick={() => handleStatusUpdate(lead._id, action.value)}
@@ -564,6 +590,15 @@ export function LeadsPage() {
                                           <span className="text-sm">{action.label}</span>
                                         </DropdownMenuItem>
                                       ))}
+                                      <DropdownMenuItem
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          setShowRejectionMenu(lead._id);
+                                        }}
+                                      >
+                                        <span className="text-sm">Rejected</span>
+                                        <span className="ml-auto text-xs text-muted-foreground">→</span>
+                                      </DropdownMenuItem>
                                     </>
                                   )}
                                 </DropdownMenuContent>
