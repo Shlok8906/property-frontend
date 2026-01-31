@@ -25,7 +25,7 @@ import {
 import { Search, Phone, Mail, Trash2, Eye, Star, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://property-frontend-80y9.onrender.com';
 
 interface Lead {
   _id: string;
