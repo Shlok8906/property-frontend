@@ -276,14 +276,13 @@ export class RealEstateCSVParser {
         case 'description':
           row.details = value;
           break;
+        case 'imageUrl':
         case 'imageurl':
         case 'imageurls':
         case 'image':
         case 'images':
           row.imageUrl = value;
-          if (value) {
-            console.log('🖼️ Raw imageUrl from CSV:', { value, length: value.length });
-          }
+          console.log(`📸 Setting imageUrl for column "${header}": "${value}"`);
           break;
       }
     });
