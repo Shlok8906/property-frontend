@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -274,7 +274,8 @@ export default function PropertyDetail() {
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-w-7xl w-full p-0">
-                        <DialogDescription className="hidden">Full size image gallery</DialogDescription>
+                        <DialogTitle className="hidden">{property.title} - Full size image</DialogTitle>
+                        <DialogDescription className="hidden">Full size image gallery for {property.title}</DialogDescription>
                         <div className="relative bg-black">
                           <img 
                             src={allImages[selectedImageIndex]} 

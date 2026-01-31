@@ -128,6 +128,9 @@ app.post('/api/properties/bulk', async (req, res) => {
   try {
     const properties = req.body;
     
+    console.log('📥 Received bulk import request with', properties.length, 'properties');
+    console.log('📥 First property received:', JSON.stringify(properties[0], null, 2));
+    
     if (!Array.isArray(properties)) {
       return res.status(400).json({ error: 'Expected an array of properties' });
     }
@@ -138,6 +141,8 @@ app.post('/api/properties/bulk', async (req, res) => {
       status: p.status || 'active'
     }));
 
+    console.log('📤 First property after status mapping:', JSON.stringify(propertiesWithStatus[0], null, 2));
+
     // Process in batches of 100 to avoid memory issues
     const BATCH_SIZE = 100;
     const results = [];
@@ -146,6 +151,10 @@ app.post('/api/properties/bulk', async (req, res) => {
       const batch = propertiesWithStatus.slice(i, i + BATCH_SIZE);
       const inserted = await Property.insertMany(batch, { ordered: false });
       results.push(...inserted);
+      console.log(`✅ Batch ${i / BATCH_SIZE + 1}: Inserted ${inserted.length} properties`);
+      if (inserted[0]) {
+        console.log('📸 First inserted property has images:', inserted[0].images);
+      }
     }
 
     res.status(201).json({ 
@@ -154,6 +163,7 @@ app.post('/api/properties/bulk', async (req, res) => {
       properties: results 
     });
   } catch (error) {
+    console.error('❌ Bulk import error:', error);
     // Handle duplicate key errors gracefully
     if (error.code === 11000) {
       res.status(207).json({ 
