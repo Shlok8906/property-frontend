@@ -62,8 +62,21 @@ export function LeadsPage() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showNotesDialog, setShowNotesDialog] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
+  const [newLead, setNewLead] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    propertyType: '',
+    budget: '',
+    location: '',
+    priority: 'warm' as const,
+    source: '',
+    notes: '',
+    conversionPotential: 50,
+  });
   const { toast } = useToast();
 
   // Fetch leads from API
@@ -191,6 +204,52 @@ export function LeadsPage() {
     }
   };
 
+  const handleCreateLead = async () => {
+    if (!newLead.name || !newLead.email || !newLead.phone) {
+      toast({
+        title: 'Error',
+        description: 'Name, email, and phone are required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/leads`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newLead),
+      });
+      if (!response.ok) throw new Error('Failed to create lead');
+      
+      const createdLead = await response.json();
+      setLeads([createdLead, ...leads]);
+      toast({
+        title: 'Success',
+        description: 'Lead created successfully',
+      });
+      setShowAddDialog(false);
+      setNewLead({
+        name: '',
+        email: '',
+        phone: '',
+        propertyType: '',
+        budget: '',
+        location: '',
+        priority: 'warm',
+        source: '',
+        notes: '',
+        conversionPotential: 50,
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to create lead',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const hotLeadsCount = leads.filter((l) => l.priority === 'hot').length;
   const totalBudget = leads.reduce((sum, l) => {
     const min = parseInt(l.budget.split('-')[0]);
@@ -212,9 +271,14 @@ export function LeadsPage() {
             <h1 className="text-3xl font-bold">Sales Leads</h1>
             <p className="text-muted-foreground mt-1">Manage and track your property buyer leads</p>
           </div>
-          <div className="text-right">
-            <div className="text-3xl font-bold text-primary">{leads.length}</div>
-            <p className="text-muted-foreground text-sm">Total Leads</p>
+          <div className="flex gap-3 items-center">
+            <div className="text-right">
+              <div className="text-3xl font-bold text-primary">{leads.length}</div>
+              <p className="text-muted-foreground text-sm">Total Leads</p>
+            </div>
+            <Button onClick={() => setShowAddDialog(true)} className="gap-2">
+              <span>+</span> Add Lead
+            </Button>
           </div>
         </div>
 
@@ -509,6 +573,132 @@ export function LeadsPage() {
             </Button>
             <Button onClick={handleSaveNotes}>
               Save Notes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Lead Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add New Lead</DialogTitle>
+            <DialogDescription>
+              Create a new sales lead in your pipeline
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">Name *</Label>
+                <Input
+                  id="name"
+                  value={newLead.name}
+                  onChange={(e) => setNewLead({ ...newLead, name: e.target.value })}
+                  placeholder="Full name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  value={newLead.email}
+                  onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
+                  placeholder="Email address"
+                  type="email"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="phone">Phone *</Label>
+                <Input
+                  id="phone"
+                  value={newLead.phone}
+                  onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })}
+                  placeholder="Phone number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="source">Source</Label>
+                <Input
+                  id="source"
+                  value={newLead.source}
+                  onChange={(e) => setNewLead({ ...newLead, source: e.target.value })}
+                  placeholder="Website, Referral, etc."
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="propertyType">Property Type</Label>
+                <Input
+                  id="propertyType"
+                  value={newLead.propertyType}
+                  onChange={(e) => setNewLead({ ...newLead, propertyType: e.target.value })}
+                  placeholder="e.g., 3BHK Apartment"
+                />
+              </div>
+              <div>
+                <Label htmlFor="budget">Budget</Label>
+                <Input
+                  id="budget"
+                  value={newLead.budget}
+                  onChange={(e) => setNewLead({ ...newLead, budget: e.target.value })}
+                  placeholder="e.g., 50-60 Lakhs"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  value={newLead.location}
+                  onChange={(e) => setNewLead({ ...newLead, location: e.target.value })}
+                  placeholder="Preferred location"
+                />
+              </div>
+              <div>
+                <Label htmlFor="priority">Priority</Label>
+                <Select
+                  value={newLead.priority}
+                  onValueChange={(value) => setNewLead({ ...newLead, priority: value as any })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hot">🔥 Hot</SelectItem>
+                    <SelectItem value="warm">🌤️ Warm</SelectItem>
+                    <SelectItem value="cold">❄️ Cold</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={newLead.notes}
+                onChange={(e) => setNewLead({ ...newLead, notes: e.target.value })}
+                placeholder="Any additional notes..."
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateLead}>
+              Create Lead
             </Button>
           </DialogFooter>
         </DialogContent>
