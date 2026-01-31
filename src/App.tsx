@@ -18,7 +18,7 @@ import { PropertyManagement } from "@/components/admin/PropertyManagement";
 import ImageManager from "@/components/admin/ImageManager";
 import { EnquiriesPage } from "@/components/admin/EnquiriesPage";
 import { LeadsPage } from "@/components/admin/LeadsPage";
-import { CSVImportPage } from "@/components/admin/CSVImportPage";
+import { CSVImportPage } from "@/components/admin/CSVImportPage.new";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
