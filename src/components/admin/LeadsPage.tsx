@@ -52,25 +52,20 @@ interface Lead {
 }
 
 const LEAD_ACTIONS = {
-  COMMUNICATION: [
-    { label: 'View Contact', icon: '👁️' },
-    { label: 'Chat on WhatsApp', icon: '💬' },
-    { label: 'Reply to', icon: '↩️' },
-  ],
   RESPONSE_STATUS: [
-    { label: 'Not Answering', value: 'not_answering', color: 'text-orange-500' },
-    { label: 'No Requirement', value: 'no_requirement', color: 'text-gray-500' },
-    { label: 'Budget Mismatch', value: 'budget_mismatch', color: 'text-red-500' },
-    { label: 'Locality Mismatch', value: 'locality_mismatch', color: 'text-yellow-500' },
-    { label: 'Broker', value: 'broker', color: 'text-blue-500' },
-    { label: 'Already Purchased', value: 'already_purchased', color: 'text-gray-600' },
+    { label: 'Not Answering', value: 'not_answering' },
+    { label: 'No Requirement', value: 'no_requirement' },
+    { label: 'Budget Mismatch', value: 'budget_mismatch' },
+    { label: 'Locality Mismatch', value: 'locality_mismatch' },
+    { label: 'Broker', value: 'broker' },
+    { label: 'Already Purchased', value: 'already_purchased' },
   ],
   LEAD_STATUS: [
-    { label: 'Interested', value: 'interested', color: 'text-green-500' },
-    { label: 'Followup / Callback', value: 'followup', color: 'text-blue-500' },
-    { label: 'Site Visit', value: 'site_visit', color: 'text-purple-500' },
-    { label: 'Deal Success', value: 'deal_success', color: 'text-green-600' },
-    { label: 'Rejected', value: 'rejected', color: 'text-red-600' },
+    { label: 'Interested', value: 'interested' },
+    { label: 'Followup / Callback', value: 'followup' },
+    { label: 'Site Visit', value: 'site_visit' },
+    { label: 'Deal Success', value: 'deal_success' },
+    { label: 'Rejected', value: 'rejected' },
   ],
 };
 
@@ -91,6 +86,7 @@ export function LeadsPage() {
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showNotesDialog, setShowNotesDialog] = useState(false);
@@ -156,11 +152,16 @@ export function LeadsPage() {
       filtered = filtered.filter((l) => l.priority === priorityFilter);
     }
 
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter((l) => l.status === statusFilter);
+    }
+
     // Sort by conversion potential (highest first)
     filtered.sort((a, b) => b.conversionPotential - a.conversionPotential);
 
     setFilteredLeads(filtered);
-  }, [searchTerm, priorityFilter, leads]);
+  }, [searchTerm, priorityFilter, statusFilter, leads]);
 
   const handleDeleteLead = async (id: string) => {
     if (!confirm('Are you sure you want to delete this lead?')) return;
@@ -414,6 +415,27 @@ export function LeadsPage() {
                   <SelectItem value="cold">❄️ Cold</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Filter by Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  {LEAD_ACTIONS.LEAD_STATUS.map((status) => (
+                    <SelectItem key={status.value} value={status.value}>
+                      {status.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="separator" disabled>
+                    ────────────────
+                  </SelectItem>
+                  {LEAD_ACTIONS.RESPONSE_STATUS.map((status) => (
+                    <SelectItem key={status.value} value={status.value}>
+                      {status.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
@@ -526,20 +548,24 @@ export function LeadsPage() {
                                       key={action.value}
                                       onClick={() => handleStatusUpdate(lead._id, action.value)}
                                     >
-                                      <span className={`text-sm ${action.color}`}>{action.label}</span>
+                                      <span className="text-sm">{action.label}</span>
                                     </DropdownMenuItem>
                                   ))}
                                   
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuLabel>Response Issues</DropdownMenuLabel>
-                                  {LEAD_ACTIONS.RESPONSE_STATUS.map((action) => (
-                                    <DropdownMenuItem
-                                      key={action.value}
-                                      onClick={() => handleStatusUpdate(lead._id, action.value)}
-                                    >
-                                      <span className={`text-sm ${action.color}`}>{action.label}</span>
-                                    </DropdownMenuItem>
-                                  ))}
+                                  {lead.status === 'rejected' && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuLabel>Response Issues</DropdownMenuLabel>
+                                      {LEAD_ACTIONS.RESPONSE_STATUS.map((action) => (
+                                        <DropdownMenuItem
+                                          key={action.value}
+                                          onClick={() => handleStatusUpdate(lead._id, action.value)}
+                                        >
+                                          <span className="text-sm">{action.label}</span>
+                                        </DropdownMenuItem>
+                                      ))}
+                                    </>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
 
