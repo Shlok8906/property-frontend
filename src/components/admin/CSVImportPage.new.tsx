@@ -60,10 +60,13 @@ export function CSVImportPage() {
       const mapped = mapToProperties(projects, configurations);
       
       // Debug: Log what we're about to send
-      console.log('📤 Sending to API:', {
-        count: mapped.length,
-        firstProperty: mapped[0],
-        imagesSample: mapped.slice(0, 3).map(p => ({ title: p.title, images: p.images, image_url: p.image_url }))
+      console.log('📤 Total properties to import:', mapped.length);
+      console.log('📤 First property details:', {
+        title: mapped[0]?.title,
+        images: mapped[0]?.images,
+        image_url: mapped[0]?.image_url,
+        imagesLength: mapped[0]?.images?.length,
+        allProperties: mapped
       });
       
       // Save to MongoDB via API
