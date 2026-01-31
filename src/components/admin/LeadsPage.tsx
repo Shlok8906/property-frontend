@@ -35,6 +35,11 @@ import {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://property-frontend-80y9.onrender.com';
 
+interface NoteHistory {
+  content: string;
+  timestamp: string;
+}
+
 interface Lead {
   _id: string;
   name: string;
@@ -47,6 +52,7 @@ interface Lead {
   source: string;
   created_at: string;
   notes?: string;
+  notesHistory?: NoteHistory[];
   conversionPotential: number;
   status?: string;
 }
@@ -257,23 +263,41 @@ export function LeadsPage() {
   };
 
   const handleSaveNotes = async () => {
-    if (!selectedLead) return;
+    if (!selectedLead || !notes.trim()) return;
     
     try {
+      const timestamp = new Date().toLocaleString('en-IN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+      });
+
+      const noteEntry: NoteHistory = {
+        content: notes,
+        timestamp,
+      };
+
+      const notesHistory = [...(selectedLead.notesHistory || []), noteEntry];
+
       const response = await fetch(`${API_BASE_URL}/api/leads/${selectedLead._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes }),
+        body: JSON.stringify({ notesHistory }),
       });
       if (!response.ok) throw new Error('Failed to save notes');
       
       const updatedLead = await response.json();
       setLeads(leads.map((l) => (l._id === selectedLead._id ? updatedLead : l)));
+      setSelectedLead(updatedLead);
+      setNotes('');
       toast({
         title: 'Success',
-        description: 'Notes saved successfully',
+        description: 'Note added successfully',
       });
-      setShowNotesDialog(false);
     } catch (error) {
       toast({
         title: 'Error',
@@ -718,7 +742,7 @@ export function LeadsPage() {
 
       {/* Notes Dialog */}
       <Dialog open={showNotesDialog} onOpenChange={setShowNotesDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add/Edit Notes</DialogTitle>
             <DialogDescription>
@@ -727,14 +751,32 @@ export function LeadsPage() {
           </DialogHeader>
 
           <div className="space-y-4">
+            {/* Notes History */}
+            {selectedLead?.notesHistory && selectedLead.notesHistory.length > 0 && (
+              <div className="border rounded-lg p-4 bg-muted/30 max-h-48 overflow-y-auto">
+                <h3 className="font-semibold mb-3 text-sm">Notes History</h3>
+                <div className="space-y-3">
+                  {selectedLead.notesHistory.map((note, idx) => (
+                    <div key={idx} className="border-l-2 border-primary pl-3 pb-3 last:pb-0">
+                      <p className="text-xs text-muted-foreground font-medium">
+                        {note.timestamp}
+                      </p>
+                      <p className="text-sm mt-1 text-foreground">{note.content}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* New Note Input */}
             <div>
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">Add New Note</Label>
               <Textarea
                 id="notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Add follow-up reminders, buyer preferences, negotiation notes, or any other important information..."
-                rows={8}
+                rows={6}
               />
             </div>
           </div>
@@ -743,7 +785,8 @@ export function LeadsPage() {
             <Button variant="outline" onClick={() => setShowNotesDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSaveNotes}>
+            <Button onClick={handleSaveNotes} disabled={!notes.trim()}>
+
               Save Notes
             </Button>
           </DialogFooter>

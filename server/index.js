@@ -93,6 +93,12 @@ const leadSchema = new mongoose.Schema({
   source: String,
   notes: String,
   status: String,
+  notesHistory: [
+    {
+      content: String,
+      timestamp: String,
+    }
+  ],
   conversionPotential: { type: Number, default: 50, min: 0, max: 100 },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
