@@ -310,7 +310,7 @@ export function LeadsPage() {
           <Card className="card-premium">
             <CardContent className="pt-6">
               <div className="text-2xl font-bold text-green-500">
-                ₹{totalBudget / 100000}Cr+
+                ₹{(totalBudget / 100).toFixed(2)} Cr
               </div>
               <p className="text-sm text-muted-foreground mt-1">Total Budget</p>
               <p className="text-xs text-muted-foreground mt-2">Combined buying power</p>
