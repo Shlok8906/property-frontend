@@ -48,22 +48,6 @@ const PRIORITY_COLORS: Record<string, string> = {
   cold: 'status-rejected',
 };
 
-const formatBudget = (budget: string): string => {
-  if (!budget) return '-';
-  // If it contains 'Cr', 'L', or '-' then it's already formatted
-  if (budget.includes('Cr') || budget.includes('L') || budget.includes('-')) {
-    return budget;
-  }
-  // If it's a number, try to format it
-  const num = parseFloat(budget);
-  if (isNaN(num)) return budget;
-  // If number is large (over 100), assume it's in lakhs and convert to Cr
-  if (num > 100) {
-    return `₹${(num / 100).toFixed(0)} Cr`;
-  }
-  return `₹${num} Cr`;
-};
-
 const PRIORITY_LABELS: Record<string, string> = {
   hot: '🔥 Hot Lead',
   warm: '🌤️ Warm Lead',
@@ -225,6 +209,16 @@ export function LeadsPage() {
       toast({
         title: 'Error',
         description: 'Name, email, and phone are required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate budget format (should be like "50-100" for lakhs)
+    if (newLead.budget && !/^\d+(-\d+)?$/.test(newLead.budget)) {
+      toast({
+        title: 'Error',
+        description: 'Budget must be in format: "50-100" (in lakhs) or single value "50"',
         variant: 'destructive',
       });
       return;
@@ -414,7 +408,7 @@ export function LeadsPage() {
                             <p className="text-xs text-muted-foreground">{lead.location}</p>
                           </TableCell>
                           <TableCell>
-                            <p className="font-medium">{formatBudget(lead.budget)}</p>
+                            <p className="font-medium">{lead.budget}</p>
                           </TableCell>
                           <TableCell>
                             <Select
@@ -531,7 +525,7 @@ export function LeadsPage() {
                 </div>
                 <div>
                   <Label className="text-muted-foreground text-sm">Budget</Label>
-                  <p className="font-medium mt-1">{formatBudget(selectedLead.budget)}</p>
+                  <p className="font-medium mt-1">{selectedLead.budget}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground text-sm">Location Preference</Label>
@@ -659,13 +653,17 @@ export function LeadsPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="budget">Budget</Label>
+                <Label htmlFor="budget">
+                  Budget <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="budget"
                   value={newLead.budget}
                   onChange={(e) => setNewLead({ ...newLead, budget: e.target.value })}
-                  placeholder="e.g., 50-60, 2 Cr, or 8500000"
+                  placeholder="e.g., 50-100 or 50 (in lakhs)"
+                  required
                 />
+                <p className="text-xs text-muted-foreground mt-1">Format: min-max or single value (e.g., 50-100 or 75)</p>
               </div>
             </div>
 
