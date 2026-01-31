@@ -444,10 +444,24 @@ export class RealEstateCSVParser {
 
   /**
    * Parse price range from string
-   * Handles: "90L", "1.12cr", "90L-95L", "1.10 to 1.16 cr", ranges, etc.
+   * Handles: "90L", "1.12cr", "90L-95L", "1.10 to 1.16 cr", raw rupees like "8500000", etc.
    */
   private parsePriceRange(priceStr: string): NormalizedPrice {
     const originalFormat = priceStr;
+
+    // Check if it's raw rupees (large number without L or Cr suffix)
+    const rawRupeeMatch = priceStr.match(/^(\d+)$/);
+    if (rawRupeeMatch) {
+      const rupees = parseFloat(rawRupeeMatch[1]);
+      const lakhs = rupees / 100000; // Convert rupees to lakhs
+      console.log(`💰 Raw rupee detected: ${rupees} rupees = ${lakhs} lakhs`);
+      return {
+        minLakhs: lakhs,
+        maxLakhs: lakhs,
+        originalFormat,
+        isRange: false,
+      };
+    }
 
     // Extract all numbers and their units
     const numbers = this.extractPriceNumbers(priceStr);
