@@ -28,6 +28,9 @@ export class RealEstateCSVParser {
     const lines = csvText.trim().split('\n');
     const headers = this.parseHeaders(lines[0]);
     
+    console.log('🔍 ALL HEADERS RECEIVED:', headers);
+    console.log('🔍 CSV Line 0 (headers):', lines[0]);
+    
     const configurations: UnitConfiguration[] = [];
     let lastValidProject: RealEstateProject | null = null;
 
@@ -42,6 +45,8 @@ export class RealEstateCSVParser {
 
       try {
         const csvRow = this.parseRow(lines[i], headers);
+        
+        console.log(`🔍 Row ${i}: `, csvRow);
         
         // Skip rows with no specification (empty data rows)
         if (!csvRow.specification || !csvRow.specification.trim()) {
