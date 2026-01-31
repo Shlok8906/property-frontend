@@ -90,11 +90,20 @@ const getStatusLabel = (status: string | undefined): string => {
   return statusObj?.label || status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 };
 
+// Helper to get status badge variant
+const getStatusVariant = (status: string | undefined): 'default' | 'secondary' | 'destructive' | 'outline' => {
+  if (!status) return 'outline';
+  if (status === 'interested') return 'default'; // Green
+  if (status === 'rejected' || LEAD_ACTIONS.RESPONSE_STATUS.some(s => s.value === status)) return 'destructive'; // Red
+  return 'secondary'; // Purple/default
+};
+
 export function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showNotesDialog, setShowNotesDialog] = useState(false);
@@ -161,11 +170,16 @@ export function LeadsPage() {
       filtered = filtered.filter((l) => l.priority === priorityFilter);
     }
 
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter((l) => l.status === statusFilter);
+    }
+
     // Sort by conversion potential (highest first)
     filtered.sort((a, b) => b.conversionPotential - a.conversionPotential);
 
     setFilteredLeads(filtered);
-  }, [searchTerm, priorityFilter, leads]);
+  }, [searchTerm, priorityFilter, statusFilter, leads]);
 
   const handleDeleteLead = async (id: string) => {
     if (!confirm('Are you sure you want to delete this lead?')) return;
@@ -419,6 +433,17 @@ export function LeadsPage() {
                   <SelectItem value="cold">❄️ Cold</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="interested">Interested</SelectItem>
+                  <SelectItem value="followup">Followup / Callback</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
@@ -492,7 +517,7 @@ export function LeadsPage() {
                             </Select>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="secondary" className="text-xs whitespace-nowrap">
+                            <Badge variant={getStatusVariant(lead.status)} className="text-xs whitespace-nowrap">
                               {getStatusLabel(lead.status)}
                             </Badge>
                           </TableCell>
