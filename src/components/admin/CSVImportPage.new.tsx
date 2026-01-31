@@ -117,6 +117,26 @@ export function CSVImportPage() {
     }
   };
 
+  const handleDeleteAll = async () => {
+    if (!window.confirm('⚠️ This will DELETE ALL properties from the database. Are you sure?')) {
+      return;
+    }
+    
+    try {
+      const result = await propertyAPI.deleteAll();
+      toast({
+        title: 'Cleanup successful',
+        description: `${result.deletedCount} properties deleted from database`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete properties',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const downloadTemplate = () => {
     const template = `Sr Nos	Builder	Sales Person	Project name	Land Parcel	Tower	Floor	Specification	Carpet	Price	Flat/Floor	Total Units	Possession	Parking	Construction	Amenities	Location	Launch Date	Floor Rise	Details
 1	Example Builder	Sales Name - 1234567890	Project Name	55 Acre	Tower 1	16 Floor	3BHK	863, 887	90L	4Flats	64 Flats	Dec 26	3=1 / 4=2	Mivan	All Amenities	Location	2024			
@@ -146,6 +166,19 @@ export function CSVImportPage() {
             <strong>How it works:</strong> Upload a CSV file with property data. AI will automatically clean and fix the data. Review the preview, then import directly to MongoDB database.
           </AlertDescription>
         </Alert>
+
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-sm text-yellow-900 mb-3">
+            <strong>Note:</strong> If you've previously imported properties without image URLs, use the cleanup button below to delete them before re-importing with the fixed code.
+          </p>
+          <Button 
+            onClick={handleDeleteAll} 
+            variant="destructive"
+            className="gap-2"
+          >
+            🗑️ Delete All Properties (Cleanup)
+          </Button>
+        </div>
 
         <div>
           <CSVImporterAdvanced onImport={handleImport} />

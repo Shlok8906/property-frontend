@@ -94,6 +94,15 @@ export const propertyAPI = {
     return response.json();
   },
 
+  // Delete all properties (for cleanup)
+  async deleteAll(): Promise<{ success: boolean; deletedCount: number; message: string }> {
+    const response = await fetch(`${API_BASE_URL}/properties`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to delete all properties');
+    return response.json();
+  },
+
   // Update property
   async update(id: string, property: Partial<Property>): Promise<Property> {
     const response = await fetch(`${API_BASE_URL}/properties/${id}`, {

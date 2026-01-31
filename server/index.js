@@ -99,6 +99,21 @@ app.get('/api/properties', async (req, res) => {
   }
 });
 
+// Delete all properties (for testing/admin cleanup)
+app.delete('/api/properties', async (req, res) => {
+  try {
+    const result = await Property.deleteMany({});
+    console.log(`🗑️ Deleted ${result.deletedCount} properties`);
+    res.json({ 
+      success: true, 
+      deletedCount: result.deletedCount,
+      message: `All ${result.deletedCount} properties deleted` 
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get single property
 app.get('/api/properties/:id', async (req, res) => {
   try {
