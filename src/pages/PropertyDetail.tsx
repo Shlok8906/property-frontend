@@ -440,7 +440,7 @@ export default function PropertyDetail() {
                       <div className="font-medium">{property.carpetArea}</div>
                     </div>
                   )}
-                  {property.units && (
+                  {property.units && property.units > 0 && (
                     <div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Users className="h-4 w-4" />
