@@ -355,7 +355,13 @@ export class RealEstateCSVParser {
     const imageUrls = this.parseImageUrls(row.imageUrl || '');
     const totalUnits = parseInt(row.totalUnits || '0') || 0;
 
-    // Determine status from details
+    console.log(`💾 createConfigurationFromRow for ${row.specification}:`, { 
+      rowImageUrl: row.imageUrl, 
+      parsedImageUrls: imageUrls,
+      length: imageUrls ? imageUrls.length : 0 
+    });
+
+    const config = {
     let status: 'available' | 'sold-out' | 'launching-soon' | 'future-phase' = 'available';
     if (row.details?.toLowerCase().includes('sold out')) {
       status = 'sold-out';

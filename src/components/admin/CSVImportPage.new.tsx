@@ -15,12 +15,28 @@ const mapToProperties = (
   configurations: UnitConfiguration[],
 ): Omit<Property, '_id' | 'created_at' | 'updated_at'>[] => {
   console.log('🔄 mapToProperties called with', configurations.length, 'configurations');
-  console.log('First config:', configurations[0]);
   
-  return configurations.map((config) => {
+  if (configurations.length > 0) {
+    const firstConfig = configurations[0];
+    console.log('🔍 First config analysis:', {
+      specification: firstConfig.specification,
+      imageUrls: firstConfig.imageUrls,
+      imageUrlsType: typeof firstConfig.imageUrls,
+      imageUrlsIsArray: Array.isArray(firstConfig.imageUrls),
+      imageUrlsLength: firstConfig.imageUrls?.length,
+    });
+  }
+  
+  return configurations.map((config, idx) => {
     const project = projects.find((p) => p.projectId === config.projectId);
     const priceLakhs = config.priceRange?.min ?? 0;
     const price = Math.round(priceLakhs * 100000);
+
+    // CRITICAL: Ensure images is always an array
+    const imagesToUse = (config.imageUrls && Array.isArray(config.imageUrls) && config.imageUrls.length > 0) 
+      ? config.imageUrls 
+      : [];
+    const firstImageUrl = imagesToUse.length > 0 ? imagesToUse[0] : undefined;
 
     const mapped = {
       title: `${project?.projectName ?? 'Property'} - ${config.specification}`,
@@ -41,16 +57,21 @@ const mapToProperties = (
       possession: config.possession,
       amenities: config.amenities,
       salesPerson: project?.salesPersonName,
-      images: config.imageUrls || [],
-      image_url: config.imageUrls?.[0] || undefined,
+      images: imagesToUse,
+      image_url: firstImageUrl,
       status: 'active',
     };
 
-    console.log(`📦 Mapped: ${mapped.title}`, { 
-      imageUrls: config.imageUrls, 
-      images: mapped.images,
-      image_url: mapped.image_url
-    });
+    if (idx === 0) {
+      console.log('📦 First mapped property:', {
+        title: mapped.title,
+        configImageUrls: config.imageUrls,
+        imagesMapped: mapped.images,
+        image_url: mapped.image_url,
+        imagesLength: mapped.images?.length,
+        imagesAreEmpty: mapped.images?.length === 0,
+      });
+    }
 
     return mapped;
   });

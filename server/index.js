@@ -135,13 +135,27 @@ app.post('/api/properties/bulk', async (req, res) => {
       return res.status(400).json({ error: 'Expected an array of properties' });
     }
 
-    // Set default status='active' for all imported properties
-    const propertiesWithStatus = properties.map(p => ({
-      ...p,
-      status: p.status || 'active'
-    }));
+    // Set default status='active' and ENSURE images is an array for all imported properties
+    const propertiesWithStatus = properties.map(p => {
+      const processed = {
+        ...p,
+        status: p.status || 'active',
+        // CRITICAL: Ensure images is always an array
+        images: Array.isArray(p.images) ? p.images : (p.images ? [p.images] : []),
+        // Ensure image_url is a string or undefined
+        image_url: typeof p.image_url === 'string' ? p.image_url : undefined,
+      };
+      return processed;
+    });
 
-    console.log('📤 First property after status mapping:', JSON.stringify(propertiesWithStatus[0], null, 2));
+    console.log('📤 First property after processing:', JSON.stringify(propertiesWithStatus[0], null, 2));
+    console.log('🖼️ First property images detail:', {
+      images: propertiesWithStatus[0]?.images,
+      imagesType: typeof propertiesWithStatus[0]?.images,
+      imagesIsArray: Array.isArray(propertiesWithStatus[0]?.images),
+      imagesLength: propertiesWithStatus[0]?.images?.length,
+      image_url: propertiesWithStatus[0]?.image_url,
+    });
 
     // Process in batches of 100 to avoid memory issues
     const BATCH_SIZE = 100;
@@ -154,6 +168,7 @@ app.post('/api/properties/bulk', async (req, res) => {
       console.log(`✅ Batch ${i / BATCH_SIZE + 1}: Inserted ${inserted.length} properties`);
       if (inserted[0]) {
         console.log('📸 First inserted property has images:', inserted[0].images);
+        console.log('📸 First inserted property image_url:', inserted[0].image_url);
       }
     }
 
