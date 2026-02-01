@@ -10,7 +10,9 @@ import {
   Shield, 
   Star,
   ArrowRight,
-  MousePointer2
+  MousePointer2,
+  Phone,
+  Mail
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -311,7 +313,8 @@ export default function Index() {
       {/* Footer - Minimalist Dark */}
       <footer className="pt-24 pb-12 bg-[#020610] border-t border-white/5">
         <div className="container">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-20">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-16 mb-20">
+            {/* Brand Section */}
             <div className="space-y-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
@@ -323,16 +326,45 @@ export default function Index() {
                 Elevating the real estate experience in Pune. Verified, Transparent, Simplified.
               </p>
             </div>
-            {['Company', 'Support', 'Legal'].map((title) => (
-              <div key={title}>
-                <h4 className="text-white font-bold mb-6">{title}</h4>
-                <ul className="space-y-4 text-sm text-gray-500">
-                  <li><a href="#" className="hover:text-primary transition-colors">About Us</a></li>
-                  <li><a href="#" className="hover:text-primary transition-colors">Our Projects</a></li>
-                  <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
-                </ul>
+
+            {/* Contact Information */}
+            <div className="space-y-6">
+              <h4 className="text-white font-bold mb-6">Contact Us</h4>
+              <div className="space-y-4">
+                <a href="tel:+919168596655" className="flex items-center gap-3 text-gray-500 hover:text-primary transition-colors group">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Phone className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-sm">+91 916 859 6655</span>
+                </a>
+                <a href="mailto:contact@nexprime.in" className="flex items-center gap-3 text-gray-500 hover:text-primary transition-colors group">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Mail className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-sm">contact@nexprime.in</span>
+                </a>
+                <div className="flex items-start gap-3 text-gray-500">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <MapPin className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="text-sm leading-relaxed">
+                    Office no 204, Magnolia Business Center,<br />
+                    Baner Pashan Link road, Pune 411021
+                  </div>
+                </div>
               </div>
-            ))}
+            </div>
+
+            {/* Quick Links */}
+            <div className="space-y-6">
+              <h4 className="text-white font-bold mb-6">Quick Links</h4>
+              <ul className="space-y-4 text-sm text-gray-500">
+                <li><Link to="/properties" className="hover:text-primary transition-colors">Browse Properties</Link></li>
+                <li><Link to="/contact" className="hover:text-primary transition-colors">Contact Us</Link></li>
+                <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">Terms of Service</a></li>
+              </ul>
+            </div>
           </div>
           <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-gray-600 text-[10px] uppercase font-bold tracking-widest">
             <p>© 2024 Nivvaas. Handcrafted for Pune.</p>

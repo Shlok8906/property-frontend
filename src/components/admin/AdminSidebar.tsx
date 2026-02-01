@@ -20,7 +20,8 @@ import {
   LogOut,
   Home,
   FileSpreadsheet,
-  Users
+  Users,
+  Mail
 } from 'lucide-react';
 
 const menuItems = [
@@ -29,6 +30,7 @@ const menuItems = [
   { title: 'CSV Import', url: '/admin/csv-import', icon: FileSpreadsheet },
   { title: 'Enquiries', url: '/admin/enquiries', icon: MessageSquare },
   { title: 'Leads', url: '/admin/leads', icon: Users },
+  { title: 'Messages', url: '/admin/messages', icon: Mail },
 ];
 
 export function AdminSidebar() {

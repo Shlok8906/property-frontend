@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Properties from "./pages/Properties";
 import PropertyDetail from "./pages/PropertyDetail";
+import Contact from "./pages/Contact";
 import Profile from "./pages/Profile";
 import MyEnquiries from "./pages/MyEnquiries";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
@@ -18,6 +19,7 @@ import { PropertyManagement } from "@/components/admin/PropertyManagement";
 import ImageManager from "@/components/admin/ImageManager";
 import { EnquiriesPage } from "@/components/admin/EnquiriesPage";
 import { LeadsPage } from "@/components/admin/LeadsPage";
+import { MessagesPage } from "@/components/admin/MessagesPage";
 import { CSVImportPage } from "@/components/admin/CSVImportPage.new";
 import NotFound from "./pages/NotFound";
 
@@ -39,6 +41,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/properties" element={<Properties />} />
             <Route path="/properties/:id" element={<PropertyDetail />} />
+            <Route path="/contact" element={<Contact />} />
 
             {/* Protected Routes - Requires authentication */}
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
@@ -51,6 +54,7 @@ const App = () => (
             <Route path="/admin/images" element={<ProtectedRoute requiredRole="admin"><ImageManager /></ProtectedRoute>} />
             <Route path="/admin/enquiries" element={<ProtectedRoute requiredRole="admin"><EnquiriesPage /></ProtectedRoute>} />
             <Route path="/admin/leads" element={<ProtectedRoute requiredRole="admin"><LeadsPage /></ProtectedRoute>} />
+            <Route path="/admin/messages" element={<ProtectedRoute requiredRole="admin"><MessagesPage /></ProtectedRoute>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -106,6 +106,19 @@ const leadSchema = new mongoose.Schema({
 
 const Lead = mongoose.model('Lead', leadSchema);
 
+// Contact Message Schema
+const contactMessageSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  phone: { type: String, required: true },
+  email: { type: String, required: true },
+  message: { type: String, required: true },
+  status: { type: String, enum: ['new', 'responded', 'closed'], default: 'new' },
+  created_at: { type: Date, default: Date.now },
+  updated_at: { type: Date, default: Date.now }
+});
+
+const ContactMessage = mongoose.model('ContactMessage', contactMessageSchema);
+
 // ===== USER SCHEMA =====
 // Stores user login information and profile data
 const userSchema = new mongoose.Schema({
@@ -398,6 +411,70 @@ app.delete('/api/leads/:id', async (req, res) => {
       return res.status(404).json({ error: 'Lead not found' });
     }
     res.json({ success: true, message: 'Lead deleted' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== CONTACT MESSAGES API =====
+// Get all contact messages
+app.get('/api/contact-messages', async (req, res) => {
+  try {
+    const messages = await ContactMessage.find().sort({ created_at: -1 });
+    res.json(messages);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create contact message
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, phone, email, message } = req.body;
+    
+    const contactMessage = new ContactMessage({
+      name,
+      phone,
+      email,
+      message,
+      status: 'new',
+    });
+    
+    await contactMessage.save();
+    res.status(201).json({ success: true, message: 'Message sent successfully', data: contactMessage });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update contact message status
+app.put('/api/contact-messages/:id', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const message = await ContactMessage.findByIdAndUpdate(
+      req.params.id,
+      { status, updated_at: Date.now() },
+      { new: true }
+    );
+    
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+    
+    res.json(message);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete contact message
+app.delete('/api/contact-messages/:id', async (req, res) => {
+  try {
+    const message = await ContactMessage.findByIdAndDelete(req.params.id);
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+    res.json({ success: true, message: 'Message deleted' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

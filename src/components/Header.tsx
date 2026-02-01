@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Building2, User, LogOut, LayoutDashboard, Heart, Search, Menu, X } from 'lucide-react';
+import { Building2, User, LogOut, LayoutDashboard, Heart, Search, Menu, X, Mail } from 'lucide-react';
 
 export function Header() {
   const { user, role, signOut } = useAuth();
@@ -51,6 +51,13 @@ export function Header() {
             >
               <Search className="h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
               <span className="hidden lg:inline">Find Properties</span>
+            </Link>
+            <Link 
+              to="/contact" 
+              className="text-xs sm:text-sm font-semibold text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group"
+            >
+              <Mail className="h-4 w-4 group-hover:scale-110 transition-transform duration-300" />
+              <span className="hidden lg:inline">Contact</span>
             </Link>
             {role === 'admin' && (
               <Link 
@@ -150,6 +157,14 @@ export function Header() {
             >
               <Search className="h-4 w-4" />
               Find Properties
+            </Link>
+            <Link 
+              to="/contact"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-4 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-lg transition-colors flex items-center gap-3"
+            >
+              <Mail className="h-4 w-4" />
+              Contact
             </Link>
             {role === 'admin' && (
               <Link 
