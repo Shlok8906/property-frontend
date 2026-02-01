@@ -106,6 +106,38 @@ const leadSchema = new mongoose.Schema({
 
 const Lead = mongoose.model('Lead', leadSchema);
 
+// ===== USER SCHEMA =====
+// Stores user login information and profile data
+const userSchema = new mongoose.Schema({
+  supabaseId: { type: String, unique: true, sparse: true, required: true },  // Supabase user ID
+  email: { type: String, required: true, lowercase: true },
+  fullName: String,
+  phone: String,
+  accountCreatedAt: { type: Date, default: Date.now },
+  lastLogin: { type: Date, default: Date.now },
+  loginCount: { type: Number, default: 1 },
+  loginHistory: [
+    {
+      timestamp: { type: Date, default: Date.now },
+      ipAddress: String,
+      userAgent: String,
+      deviceInfo: String,
+    }
+  ],
+  role: { type: String, enum: ['admin', 'customer'], default: 'customer' },
+  isActive: { type: Boolean, default: true },
+  metadata: {
+    searchInterests: [String],
+    preferredLocations: [String],
+    totalPropertiesViewed: { type: Number, default: 0 },
+    totalEnquiriesMade: { type: Number, default: 0 },
+  },
+  created_at: { type: Date, default: Date.now },
+  updated_at: { type: Date, default: Date.now }
+});
+
+const User = mongoose.model('User', userSchema);
+
 // API Routes
 
 // Get all properties
@@ -406,6 +438,227 @@ app.post('/api/migrate/add-status', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// ===== USER ENDPOINTS =====
+
+// Track user login - Called after Supabase authentication
+app.post('/api/users/track-login', async (req, res) => {
+  try {
+    const { supabaseId, email, fullName } = req.body;
+    
+    if (!supabaseId || !email) {
+      return res.status(400).json({ error: 'supabaseId and email are required' });
+    }
+
+    // Get client IP and user agent
+    const ipAddress = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+
+    // Find or create user
+    const user = await User.findOneAndUpdate(
+      { supabaseId },
+      {
+        $set: {
+          email: email.toLowerCase(),
+          fullName: fullName || 'User',
+          lastLogin: new Date(),
+          updated_at: new Date(),
+        },
+        $inc: { loginCount: 1 },
+        $push: {
+          loginHistory: {
+            timestamp: new Date(),
+            ipAddress,
+            userAgent,
+            deviceInfo: req.body.deviceInfo || 'Web',
+          }
+        }
+      },
+      { new: true, upsert: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Login tracked successfully',
+      user: {
+        id: user._id,
+        email: user.email,
+        fullName: user.fullName,
+        loginCount: user.loginCount,
+        lastLogin: user.lastLogin,
+      }
+    });
+  } catch (error) {
+    console.error('Error tracking login:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get user by Supabase ID
+app.get('/api/users/:supabaseId', async (req, res) => {
+  try {
+    const user = await User.findOne({ supabaseId: req.params.supabaseId });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get all users (admin only)
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await User.find()
+      .select('-loginHistory') // Exclude detailed login history for list view
+      .sort({ lastLogin: -1 });
+    
+    res.json({
+      totalUsers: users.length,
+      activeUsers: users.filter(u => u.isActive).length,
+      users
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get user login statistics
+app.get('/api/users/stats/overview', async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const activeUsers = await User.countDocuments({ isActive: true });
+    const activeToday = await User.countDocuments({
+      lastLogin: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+    });
+    const activeThisWeek = await User.countDocuments({
+      lastLogin: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+    });
+
+    res.json({
+      totalUsers,
+      activeUsers,
+      activeToday,
+      activeThisWeek,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update user profile
+app.put('/api/users/:supabaseId', async (req, res) => {
+  try {
+    const { phone, searchInterests, preferredLocations } = req.body;
+    
+    const user = await User.findOneAndUpdate(
+      { supabaseId: req.params.supabaseId },
+      {
+        $set: {
+          phone: phone || undefined,
+          'metadata.searchInterests': searchInterests || undefined,
+          'metadata.preferredLocations': preferredLocations || undefined,
+          updated_at: new Date(),
+        }
+      },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'User profile updated',
+      user
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Deactivate user account
+app.post('/api/users/:supabaseId/deactivate', async (req, res) => {
+  try {
+    const user = await User.findOneAndUpdate(
+      { supabaseId: req.params.supabaseId },
+      { $set: { isActive: false, updated_at: new Date() } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'User account deactivated',
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get user login history
+app.get('/api/users/:supabaseId/login-history', async (req, res) => {
+  try {
+    const user = await User.findOne({ supabaseId: req.params.supabaseId });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      supabaseId: user.supabaseId,
+      email: user.email,
+      loginCount: user.loginCount,
+      lastLogin: user.lastLogin,
+      loginHistory: user.loginHistory.sort((a, b) => b.timestamp - a.timestamp).slice(0, 50), // Last 50 logins
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Increment property view count for user
+app.post('/api/users/:supabaseId/track-property-view', async (req, res) => {
+  try {
+    const user = await User.findOneAndUpdate(
+      { supabaseId: req.params.supabaseId },
+      { $inc: { 'metadata.totalPropertiesViewed': 1 } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Increment enquiry count for user
+app.post('/api/users/:supabaseId/track-enquiry', async (req, res) => {
+  try {
+    const user = await User.findOneAndUpdate(
+      { supabaseId: req.params.supabaseId },
+      { $inc: { 'metadata.totalEnquiriesMade': 1 } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

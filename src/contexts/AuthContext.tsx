@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { trackUserLogin } from '@/lib/userTracking';
 
 type UserRole = 'admin' | 'customer' | null;
 
@@ -82,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { error, data } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -92,14 +93,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       },
     });
+
+    // Track new user signup in MongoDB
+    if (!error && data?.user) {
+      await trackUserLogin({
+        supabaseId: data.user.id,
+        email: data.user.email || email,
+        fullName: fullName || 'User',
+      });
+    }
+
     return { error };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error, data } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+
+    // Track login in MongoDB if authentication successful
+    if (!error && data?.user) {
+      await trackUserLogin({
+        supabaseId: data.user.id,
+        email: data.user.email || email,
+        fullName: data.user.user_metadata?.full_name || 'User',
+      });
+    }
+
     return { error };
   };
 
