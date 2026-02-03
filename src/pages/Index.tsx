@@ -12,7 +12,10 @@ import {
   ArrowRight,
   MousePointer2,
   Phone,
-  Mail
+  Mail,
+  Home,
+  HandshakeIcon,
+  KeyRound
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -27,7 +30,11 @@ const popularLocations = [
   { name: 'Sus', count: '1,200+ Properties' },
 ];
 
-const bhkTypes = ['1 BHK', '2 BHK', '3 BHK', '4+ BHK', 'Villa'];
+const transactionTypes = [
+  { name: 'Buy', icon: Home, value: 'sell' },
+  { name: 'Rent', icon: KeyRound, value: 'rent' },
+  { name: 'Lease', icon: HandshakeIcon, value: 'lease' }
+];
 
 const stats = [
   { value: '1000+', label: 'Properties Listed' },
@@ -73,7 +80,6 @@ const partners = [
 
 export default function Index() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedBhk, setSelectedBhk] = useState<string | null>(null);
   const [propertyCount, setPropertyCount] = useState(0);
   const navigate = useNavigate();
 
@@ -94,8 +100,11 @@ export default function Index() {
     e.preventDefault();
     const params = new URLSearchParams();
     if (searchQuery) params.set('location', searchQuery);
-    if (selectedBhk) params.set('bhk', selectedBhk);
     navigate(`/properties?${params.toString()}`);
+  };
+
+  const handleTransactionClick = (transactionValue: string) => {
+    navigate(`/properties?type=${transactionValue}`);
   };
 
   return (
@@ -161,19 +170,16 @@ export default function Index() {
               </div>
 
               {/* BHK Selection Chips */}
-              <div className="flex flex-wrap gap-2 mt-4 justify-center md:justify-start md:px-2">
-                {bhkTypes.map((bhk) => (
+              <div className="flex flex-wrap gap-3 mt-4 justify-center md:justify-start md:px-2">
+                {transactionTypes.map((type) => (
                   <button
-                    key={bhk}
+                    key={type.value}
                     type="button"
-                    onClick={() => setSelectedBhk(selectedBhk === bhk ? null : bhk)}
-                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${
-                      selectedBhk === bhk 
-                      ? 'bg-primary border-primary text-white shadow-[0_0_15px_rgba(var(--primary),0.5)]' 
-                      : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
-                    }`}
+                    onClick={() => handleTransactionClick(type.value)}
+                    className="group px-6 py-3 rounded-2xl text-sm font-bold transition-all border bg-white/5 border-white/10 text-gray-300 hover:bg-primary hover:border-primary hover:text-white hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] flex items-center gap-2"
                   >
-                    {bhk}
+                    <type.icon className="h-5 w-5" />
+                    {type.name}
                   </button>
                 ))}
               </div>
