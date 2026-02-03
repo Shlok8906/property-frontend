@@ -190,6 +190,9 @@ export default function Properties() {
   const [selectedBhks, setSelectedBhks] = useState<string[]>(
     searchParams.get('bhk') ? [searchParams.get('bhk')!] : []
   );
+  const [selectedType, setSelectedType] = useState<string>(
+    searchParams.get('type') || ''
+  );
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500000000]); // Max ₹50 Cr
 
   const fetchProperties = async () => {
@@ -219,6 +222,11 @@ export default function Properties() {
       );
     }
 
+    // Transaction type filter (Buy/Rent/Lease)
+    if (selectedType) {
+      filtered = filtered.filter(p => p.purpose === selectedType);
+    }
+
     // BHK filter
     if (selectedBhks.length > 0) {
       filtered = filtered.filter(p => p.bhk && selectedBhks.includes(p.bhk));
@@ -238,11 +246,12 @@ export default function Properties() {
   useEffect(() => { 
     console.log('Properties updated, applying filters', properties.length);
     applyFilters(properties); 
-  }, [properties, searchQuery, selectedBhks, priceRange]);
+  }, [properties, searchQuery, selectedBhks, selectedType, priceRange]);
 
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedBhks([]);
+    setSelectedType('');
     setPriceRange([0, 500000000]);
     setSearchParams({});
     applyFilters(properties);
