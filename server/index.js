@@ -187,13 +187,19 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:8080',
   'https://nivaas-tau.vercel.app',
+  process.env.FRONTEND_URL || null,
   process.env.FRONTEND_URL ? `https://${process.env.FRONTEND_URL}` : null
 ].filter(Boolean);
+
+const isVercelOrigin = (origin) => {
+  if (!origin) return false;
+  return /^https:\/\/.*\.vercel\.app$/.test(origin);
+};
 
 // CORS Configuration
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || isVercelOrigin(origin)) {
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);
