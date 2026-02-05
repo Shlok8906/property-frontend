@@ -97,7 +97,7 @@ export function CSVImportPage() {
         allProperties: mapped
       });
       
-      // Save to MongoDB via API
+      // Save to Supabase via API
       const result = await propertyAPI.createBulk(mapped);
 
       toast({
@@ -156,14 +156,14 @@ export function CSVImportPage() {
         <div>
           <h1 className="text-3xl font-bold">Bulk Import Properties</h1>
           <p className="text-muted-foreground mt-1">
-            Import multiple properties from CSV/TSV files into MongoDB database
+            Import multiple properties from CSV/TSV files into Supabase database
           </p>
         </div>
 
         <Alert>
           <FileText className="h-4 w-4" />
           <AlertDescription>
-            <strong>How it works:</strong> Upload a CSV file with property data. AI will automatically clean and fix the data. Review the preview, then import directly to MongoDB database.
+            <strong>How it works:</strong> Upload a CSV file with property data. AI will automatically clean and fix the data. Review the preview, then import directly to Supabase database.
           </AlertDescription>
         </Alert>
 

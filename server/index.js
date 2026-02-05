@@ -1,13 +1,185 @@
 import express from 'express';
 import cors from 'cors';
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/property-canvas';
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('❌ Missing Supabase environment variables. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
+  process.exit(1);
+}
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { persistSession: false }
+});
+
+const TABLES = {
+  properties: 'legacy_properties',
+  enquiries: 'legacy_enquiries',
+  leads: 'legacy_leads',
+  contactMessages: 'contact_messages',
+  users: 'user_tracking'
+};
+
+const pickDefined = (obj) => Object.fromEntries(Object.entries(obj).filter(([, value]) => value !== undefined));
+
+const normalizeImages = (images, imageUrl) => {
+  const normalizedImages = Array.isArray(images) ? images : (images ? [images] : []);
+  const normalizedImageUrl = typeof imageUrl === 'string' ? imageUrl : (normalizedImages[0] || null);
+  return { normalizedImages, normalizedImageUrl };
+};
+
+const mapPropertyFromDb = (row) => ({
+  _id: row.id,
+  id: row.id,
+  title: row.title,
+  location: row.location,
+  bhk: row.bhk,
+  price: row.price,
+  type: row.type,
+  category: row.category,
+  purpose: row.purpose,
+  builder: row.builder,
+  specification: row.specification,
+  tower: row.tower,
+  carpetArea: row.carpet_area,
+  units: row.units,
+  possession: row.possession,
+  amenities: row.amenities,
+  projectName: row.project_name,
+  salesPerson: row.sales_person,
+  image_url: row.image_url,
+  images: row.images,
+  status: row.status,
+  created_at: row.created_at,
+  updated_at: row.updated_at
+});
+
+const mapPropertyToDb = (property) => {
+  const { normalizedImages, normalizedImageUrl } = normalizeImages(property.images, property.image_url);
+  return pickDefined({
+    title: property.title,
+    location: property.location,
+    bhk: property.bhk,
+    price: property.price,
+    type: property.type,
+    category: property.category,
+    purpose: property.purpose,
+    builder: property.builder,
+    specification: property.specification,
+    tower: property.tower,
+    carpet_area: property.carpetArea ?? property.carpet_area,
+    units: property.units,
+    possession: property.possession,
+    amenities: property.amenities,
+    project_name: property.projectName ?? property.project_name,
+    sales_person: property.salesPerson ?? property.sales_person,
+    image_url: normalizedImageUrl,
+    images: normalizedImages,
+    status: property.status
+  });
+};
+
+const mapEnquiryFromDb = (row) => ({
+  _id: row.id,
+  id: row.id,
+  propertyId: row.property_id,
+  propertyTitle: row.property_title,
+  name: row.name,
+  email: row.email,
+  phone: row.phone,
+  message: row.message,
+  status: row.status,
+  created_at: row.created_at,
+  updated_at: row.updated_at
+});
+
+const mapEnquiryToDb = (enquiry) => pickDefined({
+  property_id: enquiry.propertyId ?? enquiry.property_id,
+  property_title: enquiry.propertyTitle ?? enquiry.property_title,
+  name: enquiry.name,
+  email: enquiry.email,
+  phone: enquiry.phone,
+  message: enquiry.message,
+  status: enquiry.status
+});
+
+const mapLeadFromDb = (row) => ({
+  _id: row.id,
+  id: row.id,
+  name: row.name,
+  email: row.email,
+  phone: row.phone,
+  propertyType: row.property_type,
+  budget: row.budget,
+  location: row.location,
+  priority: row.priority,
+  source: row.source,
+  notes: row.notes,
+  status: row.status,
+  notesHistory: row.notes_history,
+  conversionPotential: row.conversion_potential,
+  created_at: row.created_at,
+  updated_at: row.updated_at
+});
+
+const mapLeadToDb = (lead) => pickDefined({
+  name: lead.name,
+  email: lead.email,
+  phone: lead.phone,
+  property_type: lead.propertyType ?? lead.property_type,
+  budget: lead.budget,
+  location: lead.location,
+  priority: lead.priority,
+  source: lead.source,
+  notes: lead.notes,
+  status: lead.status,
+  notes_history: lead.notesHistory ?? lead.notes_history,
+  conversion_potential: lead.conversionPotential ?? lead.conversion_potential
+});
+
+const mapContactMessageFromDb = (row) => ({
+  _id: row.id,
+  id: row.id,
+  name: row.name,
+  phone: row.phone,
+  email: row.email,
+  message: row.message,
+  status: row.status,
+  created_at: row.created_at,
+  updated_at: row.updated_at
+});
+
+const mapUserFromDb = (row) => ({
+  id: row.id,
+  supabaseId: row.supabase_id,
+  email: row.email,
+  fullName: row.full_name,
+  phone: row.phone,
+  accountCreatedAt: row.account_created_at,
+  lastLogin: row.last_login,
+  loginCount: row.login_count,
+  loginHistory: row.login_history,
+  role: row.role,
+  isActive: row.is_active,
+  metadata: row.metadata,
+  created_at: row.created_at,
+  updated_at: row.updated_at
+});
+
+const countRows = async (table, filter = (query) => query) => {
+  const { count, error } = await filter(
+    supabase.from(table).select('id', { count: 'exact', head: true })
+  );
+  if (error) throw error;
+  return count || 0;
+};
 
 // Allowed origins for CORS
 const allowedOrigins = [
@@ -31,139 +203,25 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json({ limit: '50mb' })); // Increased limit for base64 images
+app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-// MongoDB Connection (removed deprecated options)
-mongoose.connect(MONGODB_URI)
-.then(() => console.log('✅ MongoDB connected successfully'))
-.catch((err) => console.error('❌ MongoDB connection error:', err));
-
-// Property Schema
-const propertySchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  location: { type: String, required: true },
-  bhk: String,
-  price: Number,
-  type: String,
-  category: String,
-  purpose: String,
-  builder: String,
-  specification: String,
-  tower: String,
-  carpetArea: String,
-  units: Number,
-  possession: String,
-  amenities: [String],
-  projectName: String,
-  salesPerson: String,
-  image_url: String,  // Single image URL for backward compatibility
-  images: [String],   // Array of image URLs for multiple images
-  status: { type: String, default: 'active', enum: ['active', 'hidden'] },  // Property visibility status
-  created_at: { type: Date, default: Date.now },
-  updated_at: { type: Date, default: Date.now }
-});
-
-const Property = mongoose.model('Property', propertySchema);
-
-// Enquiry Schema
-const enquirySchema = new mongoose.Schema({
-  propertyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Property' },
-  propertyTitle: String,
-  name: { type: String, required: true },
-  email: String,
-  phone: { type: String, required: true },
-  message: String,
-  status: { type: String, enum: ['new', 'contacted', 'closed'], default: 'new' },
-  created_at: { type: Date, default: Date.now },
-  updated_at: { type: Date, default: Date.now }
-});
-
-const Enquiry = mongoose.model('Enquiry', enquirySchema);
-
-// Lead Schema
-const leadSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true },
-  phone: { type: String, required: true },
-  propertyType: String,
-  budget: String,
-  location: String,
-  priority: { type: String, enum: ['hot', 'warm', 'cold'], default: 'warm' },
-  source: String,
-  notes: String,
-  status: String,
-  notesHistory: [
-    {
-      content: String,
-      timestamp: String,
-    }
-  ],
-  conversionPotential: { type: Number, default: 50, min: 0, max: 100 },
-  created_at: { type: Date, default: Date.now },
-  updated_at: { type: Date, default: Date.now }
-});
-
-const Lead = mongoose.model('Lead', leadSchema);
-
-// Contact Message Schema
-const contactMessageSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  phone: { type: String, required: true },
-  email: { type: String, required: true },
-  message: { type: String, required: true },
-  status: { type: String, enum: ['new', 'responded', 'closed'], default: 'new' },
-  created_at: { type: Date, default: Date.now },
-  updated_at: { type: Date, default: Date.now }
-});
-
-const ContactMessage = mongoose.model('ContactMessage', contactMessageSchema);
-
-// ===== USER SCHEMA =====
-// Stores user login information and profile data
-const userSchema = new mongoose.Schema({
-  supabaseId: { type: String, unique: true, sparse: true, required: true },  // Supabase user ID
-  email: { type: String, required: true, lowercase: true },
-  fullName: String,
-  phone: String,
-  accountCreatedAt: { type: Date, default: Date.now },
-  lastLogin: { type: Date, default: Date.now },
-  loginCount: { type: Number, default: 1 },
-  loginHistory: [
-    {
-      timestamp: { type: Date, default: Date.now },
-      ipAddress: String,
-      userAgent: String,
-      deviceInfo: String,
-    }
-  ],
-  role: { type: String, enum: ['admin', 'customer'], default: 'customer' },
-  isActive: { type: Boolean, default: true },
-  metadata: {
-    searchInterests: [String],
-    preferredLocations: [String],
-    totalPropertiesViewed: { type: Number, default: 0 },
-    totalEnquiriesMade: { type: Number, default: 0 },
-  },
-  created_at: { type: Date, default: Date.now },
-  updated_at: { type: Date, default: Date.now }
-});
-
-const User = mongoose.model('User', userSchema);
 
 // API Routes
 
 // Get all properties
 app.get('/api/properties', async (req, res) => {
   try {
-    // For admin panel, include all properties. For customer site, only show active ones.
-    // Check if request is from admin panel (you can add auth header check here)
     const includeHidden = req.query.includeHidden === 'true';
-    
-    // Show properties that are either explicitly 'active' or don't have a status field (backward compatibility)
-    const query = includeHidden ? {} : { $or: [{ status: 'active' }, { status: { $exists: false } }] };
-    const properties = await Property.find(query).sort({ created_at: -1 });
-    res.json(properties);
+
+    let query = supabase.from(TABLES.properties).select('*').order('created_at', { ascending: false });
+    if (!includeHidden) {
+      query = query.eq('status', 'active');
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    res.json((data || []).map(mapPropertyFromDb));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -172,12 +230,20 @@ app.get('/api/properties', async (req, res) => {
 // Delete all properties (for testing/admin cleanup)
 app.delete('/api/properties', async (req, res) => {
   try {
-    const result = await Property.deleteMany({});
-    console.log(`🗑️ Deleted ${result.deletedCount} properties`);
-    res.json({ 
-      success: true, 
-      deletedCount: result.deletedCount,
-      message: `All ${result.deletedCount} properties deleted` 
+    const { data, error } = await supabase
+      .from(TABLES.properties)
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000')
+      .select('id');
+
+    if (error) throw error;
+
+    const deletedCount = data?.length || 0;
+    console.log(`🗑️ Deleted ${deletedCount} properties`);
+    res.json({
+      success: true,
+      deletedCount,
+      message: `All ${deletedCount} properties deleted`
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -187,11 +253,18 @@ app.delete('/api/properties', async (req, res) => {
 // Get single property
 app.get('/api/properties/:id', async (req, res) => {
   try {
-    const property = await Property.findById(req.params.id);
-    if (!property) {
+    const { data, error } = await supabase
+      .from(TABLES.properties)
+      .select('*')
+      .eq('id', req.params.id)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
       return res.status(404).json({ error: 'Property not found' });
     }
-    res.json(property);
+
+    res.json(mapPropertyFromDb(data));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -200,9 +273,19 @@ app.get('/api/properties/:id', async (req, res) => {
 // Create property
 app.post('/api/properties', async (req, res) => {
   try {
-    const property = new Property(req.body);
-    await property.save();
-    res.status(201).json(property);
+    const payload = {
+      ...mapPropertyToDb(req.body),
+      status: req.body.status || 'active'
+    };
+
+    const { data, error } = await supabase
+      .from(TABLES.properties)
+      .insert(payload)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    res.status(201).json(mapPropertyFromDb(data));
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -212,83 +295,66 @@ app.post('/api/properties', async (req, res) => {
 app.post('/api/properties/bulk', async (req, res) => {
   try {
     const properties = req.body;
-    
-    console.log('📥 Received bulk import request with', properties.length, 'properties');
-    console.log('📥 First property received:', JSON.stringify(properties[0], null, 2));
-    
+
     if (!Array.isArray(properties)) {
       return res.status(400).json({ error: 'Expected an array of properties' });
     }
 
-    // Set default status='active' and ENSURE images is an array for all imported properties
-    const propertiesWithStatus = properties.map(p => {
-      const processed = {
-        ...p,
-        status: p.status || 'active',
-        // CRITICAL: Ensure images is always an array
-        images: Array.isArray(p.images) ? p.images : (p.images ? [p.images] : []),
-        // Ensure image_url is a string or undefined
-        image_url: typeof p.image_url === 'string' ? p.image_url : undefined,
-      };
-      return processed;
-    });
+    const propertiesWithStatus = properties.map((property) => ({
+      ...property,
+      status: property.status || 'active'
+    }));
 
-    console.log('📤 First property after processing:', JSON.stringify(propertiesWithStatus[0], null, 2));
-    console.log('🖼️ First property images detail:', {
-      images: propertiesWithStatus[0]?.images,
-      imagesType: typeof propertiesWithStatus[0]?.images,
-      imagesIsArray: Array.isArray(propertiesWithStatus[0]?.images),
-      imagesLength: propertiesWithStatus[0]?.images?.length,
-      image_url: propertiesWithStatus[0]?.image_url,
-    });
-
-    // Process in batches of 100 to avoid memory issues
     const BATCH_SIZE = 100;
     const results = [];
-    
+
     for (let i = 0; i < propertiesWithStatus.length; i += BATCH_SIZE) {
-      const batch = propertiesWithStatus.slice(i, i + BATCH_SIZE);
-      const inserted = await Property.insertMany(batch, { ordered: false });
-      results.push(...inserted);
-      console.log(`✅ Batch ${i / BATCH_SIZE + 1}: Inserted ${inserted.length} properties`);
-      if (inserted[0]) {
-        console.log('📸 First inserted property has images:', inserted[0].images);
-        console.log('📸 First inserted property image_url:', inserted[0].image_url);
+      const batch = propertiesWithStatus.slice(i, i + BATCH_SIZE).map(mapPropertyToDb);
+      const { data, error } = await supabase
+        .from(TABLES.properties)
+        .insert(batch)
+        .select('*');
+
+      if (error) throw error;
+
+      if (data?.length) {
+        results.push(...data.map(mapPropertyFromDb));
+        console.log(`✅ Batch ${i / BATCH_SIZE + 1}: Inserted ${data.length} properties`);
       }
     }
 
-    res.status(201).json({ 
-      success: true, 
-      count: results.length, 
-      properties: results 
+    res.status(201).json({
+      success: true,
+      count: results.length,
+      properties: results
     });
   } catch (error) {
     console.error('❌ Bulk import error:', error);
-    // Handle duplicate key errors gracefully
-    if (error.code === 11000) {
-      res.status(207).json({ 
-        success: true, 
-        count: error.insertedDocs?.length || 0,
-        message: 'Some properties were duplicates and skipped'
-      });
-    } else {
-      res.status(400).json({ error: error.message });
-    }
+    res.status(400).json({ error: error.message });
   }
 });
 
 // Update property
 app.put('/api/properties/:id', async (req, res) => {
   try {
-    const property = await Property.findByIdAndUpdate(
-      req.params.id,
-      { ...req.body, updated_at: new Date() },
-      { new: true, runValidators: true }
-    );
-    if (!property) {
+    const payload = {
+      ...mapPropertyToDb(req.body),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from(TABLES.properties)
+      .update(payload)
+      .eq('id', req.params.id)
+      .select('*')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
       return res.status(404).json({ error: 'Property not found' });
     }
-    res.json(property);
+
+    res.json(mapPropertyFromDb(data));
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -297,10 +363,18 @@ app.put('/api/properties/:id', async (req, res) => {
 // Delete property
 app.delete('/api/properties/:id', async (req, res) => {
   try {
-    const property = await Property.findByIdAndDelete(req.params.id);
-    if (!property) {
+    const { data, error } = await supabase
+      .from(TABLES.properties)
+      .delete()
+      .eq('id', req.params.id)
+      .select('id')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
       return res.status(404).json({ error: 'Property not found' });
     }
+
     res.json({ success: true, message: 'Property deleted' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -308,15 +382,25 @@ app.delete('/api/properties/:id', async (req, res) => {
 });
 
 // Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', mongodb: mongoose.connection.readyState === 1 });
+app.get('/api/health', async (req, res) => {
+  try {
+    const { error } = await supabase.from(TABLES.properties).select('id').limit(1);
+    res.json({ status: 'OK', supabase: !error });
+  } catch (error) {
+    res.json({ status: 'OK', supabase: false, error: error.message });
+  }
 });
 
 // Get all enquiries
 app.get('/api/enquiries', async (req, res) => {
   try {
-    const enquiries = await Enquiry.find().sort({ created_at: -1 }).populate('propertyId');
-    res.json(enquiries);
+    const { data, error } = await supabase
+      .from(TABLES.enquiries)
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json((data || []).map(mapEnquiryFromDb));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -325,9 +409,19 @@ app.get('/api/enquiries', async (req, res) => {
 // Create enquiry
 app.post('/api/enquiries', async (req, res) => {
   try {
-    const enquiry = new Enquiry(req.body);
-    await enquiry.save();
-    res.status(201).json(enquiry);
+    const payload = {
+      ...mapEnquiryToDb(req.body),
+      status: req.body.status || 'new'
+    };
+
+    const { data, error } = await supabase
+      .from(TABLES.enquiries)
+      .insert(payload)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    res.status(201).json(mapEnquiryFromDb(data));
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -336,15 +430,24 @@ app.post('/api/enquiries', async (req, res) => {
 // Update enquiry status
 app.put('/api/enquiries/:id', async (req, res) => {
   try {
-    const enquiry = await Enquiry.findByIdAndUpdate(
-      req.params.id,
-      { ...req.body, updated_at: new Date() },
-      { new: true }
-    );
-    if (!enquiry) {
+    const payload = {
+      ...mapEnquiryToDb(req.body),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from(TABLES.enquiries)
+      .update(payload)
+      .eq('id', req.params.id)
+      .select('*')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
       return res.status(404).json({ error: 'Enquiry not found' });
     }
-    res.json(enquiry);
+
+    res.json(mapEnquiryFromDb(data));
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -353,10 +456,18 @@ app.put('/api/enquiries/:id', async (req, res) => {
 // Delete enquiry
 app.delete('/api/enquiries/:id', async (req, res) => {
   try {
-    const enquiry = await Enquiry.findByIdAndDelete(req.params.id);
-    if (!enquiry) {
+    const { data, error } = await supabase
+      .from(TABLES.enquiries)
+      .delete()
+      .eq('id', req.params.id)
+      .select('id')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
       return res.status(404).json({ error: 'Enquiry not found' });
     }
+
     res.json({ success: true, message: 'Enquiry deleted' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -368,8 +479,13 @@ app.delete('/api/enquiries/:id', async (req, res) => {
 // Get all leads
 app.get('/api/leads', async (req, res) => {
   try {
-    const leads = await Lead.find().sort({ created_at: -1 });
-    res.json(leads);
+    const { data, error } = await supabase
+      .from(TABLES.leads)
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json((data || []).map(mapLeadFromDb));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -378,9 +494,20 @@ app.get('/api/leads', async (req, res) => {
 // Create lead
 app.post('/api/leads', async (req, res) => {
   try {
-    const lead = new Lead(req.body);
-    await lead.save();
-    res.status(201).json(lead);
+    const payload = {
+      ...mapLeadToDb(req.body),
+      priority: req.body.priority || 'warm',
+      conversion_potential: req.body.conversionPotential ?? req.body.conversion_potential ?? 50
+    };
+
+    const { data, error } = await supabase
+      .from(TABLES.leads)
+      .insert(payload)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    res.status(201).json(mapLeadFromDb(data));
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -389,15 +516,24 @@ app.post('/api/leads', async (req, res) => {
 // Update lead
 app.put('/api/leads/:id', async (req, res) => {
   try {
-    const lead = await Lead.findByIdAndUpdate(
-      req.params.id,
-      { ...req.body, updated_at: Date.now() },
-      { new: true }
-    );
-    if (!lead) {
+    const payload = {
+      ...mapLeadToDb(req.body),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from(TABLES.leads)
+      .update(payload)
+      .eq('id', req.params.id)
+      .select('*')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
       return res.status(404).json({ error: 'Lead not found' });
     }
-    res.json(lead);
+
+    res.json(mapLeadFromDb(data));
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -406,10 +542,18 @@ app.put('/api/leads/:id', async (req, res) => {
 // Delete lead
 app.delete('/api/leads/:id', async (req, res) => {
   try {
-    const lead = await Lead.findByIdAndDelete(req.params.id);
-    if (!lead) {
+    const { data, error } = await supabase
+      .from(TABLES.leads)
+      .delete()
+      .eq('id', req.params.id)
+      .select('id')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
       return res.status(404).json({ error: 'Lead not found' });
     }
+
     res.json({ success: true, message: 'Lead deleted' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -420,8 +564,13 @@ app.delete('/api/leads/:id', async (req, res) => {
 // Get all contact messages
 app.get('/api/contact-messages', async (req, res) => {
   try {
-    const messages = await ContactMessage.find().sort({ created_at: -1 });
-    res.json(messages);
+    const { data, error } = await supabase
+      .from(TABLES.contactMessages)
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json((data || []).map(mapContactMessageFromDb));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -431,17 +580,21 @@ app.get('/api/contact-messages', async (req, res) => {
 app.post('/api/contact', async (req, res) => {
   try {
     const { name, phone, email, message } = req.body;
-    
-    const contactMessage = new ContactMessage({
-      name,
-      phone,
-      email,
-      message,
-      status: 'new',
-    });
-    
-    await contactMessage.save();
-    res.status(201).json({ success: true, message: 'Message sent successfully', data: contactMessage });
+
+    const { data, error } = await supabase
+      .from(TABLES.contactMessages)
+      .insert({
+        name,
+        phone,
+        email,
+        message,
+        status: 'new'
+      })
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    res.status(201).json({ success: true, message: 'Message sent successfully', data: mapContactMessageFromDb(data) });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -451,17 +604,19 @@ app.post('/api/contact', async (req, res) => {
 app.put('/api/contact-messages/:id', async (req, res) => {
   try {
     const { status } = req.body;
-    const message = await ContactMessage.findByIdAndUpdate(
-      req.params.id,
-      { status, updated_at: Date.now() },
-      { new: true }
-    );
-    
-    if (!message) {
+    const { data, error } = await supabase
+      .from(TABLES.contactMessages)
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .select('*')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
       return res.status(404).json({ error: 'Message not found' });
     }
-    
-    res.json(message);
+
+    res.json(mapContactMessageFromDb(data));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -470,10 +625,18 @@ app.put('/api/contact-messages/:id', async (req, res) => {
 // Delete contact message
 app.delete('/api/contact-messages/:id', async (req, res) => {
   try {
-    const message = await ContactMessage.findByIdAndDelete(req.params.id);
-    if (!message) {
+    const { data, error } = await supabase
+      .from(TABLES.contactMessages)
+      .delete()
+      .eq('id', req.params.id)
+      .select('id')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
       return res.status(404).json({ error: 'Message not found' });
     }
+
     res.json({ success: true, message: 'Message deleted' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -483,15 +646,16 @@ app.delete('/api/contact-messages/:id', async (req, res) => {
 // Get dashboard stats
 app.get('/api/stats', async (req, res) => {
   try {
-    const totalProperties = await Property.countDocuments();
-    const totalEnquiries = await Enquiry.countDocuments();
-    const newEnquiries = await Enquiry.countDocuments({ status: 'new' });
-    
+    const totalProperties = await countRows(TABLES.properties);
+    const totalEnquiries = await countRows(TABLES.enquiries);
+    const newEnquiries = await countRows(TABLES.enquiries, (query) => query.eq('status', 'new'));
+    const activeListings = await countRows(TABLES.properties, (query) => query.eq('purpose', 'sale'));
+
     res.json({
       totalProperties,
       totalEnquiries,
       newEnquiries,
-      activeListings: await Property.countDocuments({ purpose: 'sale' })
+      activeListings
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -501,15 +665,17 @@ app.get('/api/stats', async (req, res) => {
 // Migration endpoint - Add status field to all existing properties (run once)
 app.post('/api/migrate/add-status', async (req, res) => {
   try {
-    const result = await Property.updateMany(
-      { status: { $exists: false } },  // Only update properties without status field
-      { $set: { status: 'active' } }
-    );
-    
+    const { data, error } = await supabase
+      .from(TABLES.properties)
+      .update({ status: 'active', updated_at: new Date().toISOString() })
+      .is('status', null)
+      .select('id');
+
+    if (error) throw error;
     res.json({
       success: true,
       message: 'Migration completed',
-      modifiedCount: result.modifiedCount
+      modifiedCount: data?.length || 0
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -522,47 +688,64 @@ app.post('/api/migrate/add-status', async (req, res) => {
 app.post('/api/users/track-login', async (req, res) => {
   try {
     const { supabaseId, email, fullName } = req.body;
-    
+
     if (!supabaseId || !email) {
       return res.status(400).json({ error: 'supabaseId and email are required' });
     }
 
-    // Get client IP and user agent
     const ipAddress = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress;
     const userAgent = req.headers['user-agent'] || 'Unknown';
 
-    // Find or create user
-    const user = await User.findOneAndUpdate(
-      { supabaseId },
-      {
-        $set: {
-          email: email.toLowerCase(),
-          fullName: fullName || 'User',
-          lastLogin: new Date(),
-          updated_at: new Date(),
-        },
-        $inc: { loginCount: 1 },
-        $push: {
-          loginHistory: {
-            timestamp: new Date(),
-            ipAddress,
-            userAgent,
-            deviceInfo: req.body.deviceInfo || 'Web',
-          }
-        }
-      },
-      { new: true, upsert: true }
-    );
+    const { data: existingUser, error: existingError } = await supabase
+      .from(TABLES.users)
+      .select('*')
+      .eq('supabase_id', supabaseId)
+      .maybeSingle();
+
+    if (existingError) throw existingError;
+
+    const loginHistory = Array.isArray(existingUser?.login_history) ? existingUser.login_history : [];
+    const newEntry = {
+      timestamp: new Date().toISOString(),
+      ipAddress,
+      userAgent,
+      deviceInfo: req.body.deviceInfo || 'Web'
+    };
+
+    const updatedHistory = [newEntry, ...loginHistory].slice(0, 200);
+    const metadata = existingUser?.metadata || { totalPropertiesViewed: 0, totalEnquiriesMade: 0 };
+
+    const payload = {
+      supabase_id: supabaseId,
+      email: email.toLowerCase(),
+      full_name: fullName || 'User',
+      last_login: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      login_count: (existingUser?.login_count || 0) + 1,
+      login_history: updatedHistory,
+      role: existingUser?.role || 'customer',
+      is_active: existingUser?.is_active ?? true,
+      metadata,
+      account_created_at: existingUser?.account_created_at || new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from(TABLES.users)
+      .upsert(payload, { onConflict: 'supabase_id' })
+      .select('*')
+      .single();
+
+    if (error) throw error;
 
     res.status(200).json({
       success: true,
       message: 'Login tracked successfully',
       user: {
-        id: user._id,
-        email: user.email,
-        fullName: user.fullName,
-        loginCount: user.loginCount,
-        lastLogin: user.lastLogin,
+        id: data.id,
+        email: data.email,
+        fullName: data.full_name,
+        loginCount: data.login_count,
+        lastLogin: data.last_login
       }
     });
   } catch (error) {
@@ -574,11 +757,18 @@ app.post('/api/users/track-login', async (req, res) => {
 // Get user by Supabase ID
 app.get('/api/users/:supabaseId', async (req, res) => {
   try {
-    const user = await User.findOne({ supabaseId: req.params.supabaseId });
-    if (!user) {
+    const { data, error } = await supabase
+      .from(TABLES.users)
+      .select('*')
+      .eq('supabase_id', req.params.supabaseId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
       return res.status(404).json({ error: 'User not found' });
     }
-    res.json(user);
+
+    res.json(mapUserFromDb(data));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -587,13 +777,17 @@ app.get('/api/users/:supabaseId', async (req, res) => {
 // Get all users (admin only)
 app.get('/api/users', async (req, res) => {
   try {
-    const users = await User.find()
-      .select('-loginHistory') // Exclude detailed login history for list view
-      .sort({ lastLogin: -1 });
-    
+    const { data, error } = await supabase
+      .from(TABLES.users)
+      .select('id,supabase_id,email,full_name,phone,account_created_at,last_login,login_count,role,is_active,metadata,created_at,updated_at')
+      .order('last_login', { ascending: false });
+
+    if (error) throw error;
+
+    const users = (data || []).map(mapUserFromDb);
     res.json({
       totalUsers: users.length,
-      activeUsers: users.filter(u => u.isActive).length,
+      activeUsers: users.filter((user) => user.isActive).length,
       users
     });
   } catch (error) {
@@ -604,20 +798,16 @@ app.get('/api/users', async (req, res) => {
 // Get user login statistics
 app.get('/api/users/stats/overview', async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
-    const activeUsers = await User.countDocuments({ isActive: true });
-    const activeToday = await User.countDocuments({
-      lastLogin: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
-    });
-    const activeThisWeek = await User.countDocuments({
-      lastLogin: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
-    });
+    const totalUsers = await countRows(TABLES.users);
+    const activeUsers = await countRows(TABLES.users, (query) => query.eq('is_active', true));
+    const activeToday = await countRows(TABLES.users, (query) => query.gte('last_login', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()));
+    const activeThisWeek = await countRows(TABLES.users, (query) => query.gte('last_login', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()));
 
     res.json({
       totalUsers,
       activeUsers,
       activeToday,
-      activeThisWeek,
+      activeThisWeek
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -628,28 +818,41 @@ app.get('/api/users/stats/overview', async (req, res) => {
 app.put('/api/users/:supabaseId', async (req, res) => {
   try {
     const { phone, searchInterests, preferredLocations } = req.body;
-    
-    const user = await User.findOneAndUpdate(
-      { supabaseId: req.params.supabaseId },
-      {
-        $set: {
-          phone: phone || undefined,
-          'metadata.searchInterests': searchInterests || undefined,
-          'metadata.preferredLocations': preferredLocations || undefined,
-          updated_at: new Date(),
-        }
-      },
-      { new: true }
-    );
 
-    if (!user) {
+    const { data: existingUser, error: existingError } = await supabase
+      .from(TABLES.users)
+      .select('*')
+      .eq('supabase_id', req.params.supabaseId)
+      .maybeSingle();
+
+    if (existingError) throw existingError;
+    if (!existingUser) {
       return res.status(404).json({ error: 'User not found' });
     }
+
+    const metadata = {
+      ...(existingUser.metadata || {}),
+      ...(searchInterests ? { searchInterests } : {}),
+      ...(preferredLocations ? { preferredLocations } : {})
+    };
+
+    const { data, error } = await supabase
+      .from(TABLES.users)
+      .update({
+        phone: phone || existingUser.phone,
+        metadata,
+        updated_at: new Date().toISOString()
+      })
+      .eq('supabase_id', req.params.supabaseId)
+      .select('*')
+      .single();
+
+    if (error) throw error;
 
     res.json({
       success: true,
       message: 'User profile updated',
-      user
+      user: mapUserFromDb(data)
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -659,19 +862,21 @@ app.put('/api/users/:supabaseId', async (req, res) => {
 // Deactivate user account
 app.post('/api/users/:supabaseId/deactivate', async (req, res) => {
   try {
-    const user = await User.findOneAndUpdate(
-      { supabaseId: req.params.supabaseId },
-      { $set: { isActive: false, updated_at: new Date() } },
-      { new: true }
-    );
+    const { data, error } = await supabase
+      .from(TABLES.users)
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('supabase_id', req.params.supabaseId)
+      .select('id')
+      .maybeSingle();
 
-    if (!user) {
+    if (error) throw error;
+    if (!data) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     res.json({
       success: true,
-      message: 'User account deactivated',
+      message: 'User account deactivated'
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -681,17 +886,24 @@ app.post('/api/users/:supabaseId/deactivate', async (req, res) => {
 // Get user login history
 app.get('/api/users/:supabaseId/login-history', async (req, res) => {
   try {
-    const user = await User.findOne({ supabaseId: req.params.supabaseId });
-    if (!user) {
+    const { data, error } = await supabase
+      .from(TABLES.users)
+      .select('supabase_id,email,login_count,last_login,login_history')
+      .eq('supabase_id', req.params.supabaseId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    const loginHistory = Array.isArray(data.login_history) ? data.login_history : [];
     res.json({
-      supabaseId: user.supabaseId,
-      email: user.email,
-      loginCount: user.loginCount,
-      lastLogin: user.lastLogin,
-      loginHistory: user.loginHistory.sort((a, b) => b.timestamp - a.timestamp).slice(0, 50), // Last 50 logins
+      supabaseId: data.supabase_id,
+      email: data.email,
+      loginCount: data.login_count,
+      lastLogin: data.last_login,
+      loginHistory: loginHistory.slice(0, 50)
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -701,16 +913,28 @@ app.get('/api/users/:supabaseId/login-history', async (req, res) => {
 // Increment property view count for user
 app.post('/api/users/:supabaseId/track-property-view', async (req, res) => {
   try {
-    const user = await User.findOneAndUpdate(
-      { supabaseId: req.params.supabaseId },
-      { $inc: { 'metadata.totalPropertiesViewed': 1 } },
-      { new: true }
-    );
+    const { data: existingUser, error: existingError } = await supabase
+      .from(TABLES.users)
+      .select('metadata')
+      .eq('supabase_id', req.params.supabaseId)
+      .maybeSingle();
 
-    if (!user) {
+    if (existingError) throw existingError;
+    if (!existingUser) {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    const metadata = {
+      ...(existingUser.metadata || {}),
+      totalPropertiesViewed: (existingUser.metadata?.totalPropertiesViewed || 0) + 1
+    };
+
+    const { error } = await supabase
+      .from(TABLES.users)
+      .update({ metadata, updated_at: new Date().toISOString() })
+      .eq('supabase_id', req.params.supabaseId);
+
+    if (error) throw error;
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -720,16 +944,28 @@ app.post('/api/users/:supabaseId/track-property-view', async (req, res) => {
 // Increment enquiry count for user
 app.post('/api/users/:supabaseId/track-enquiry', async (req, res) => {
   try {
-    const user = await User.findOneAndUpdate(
-      { supabaseId: req.params.supabaseId },
-      { $inc: { 'metadata.totalEnquiriesMade': 1 } },
-      { new: true }
-    );
+    const { data: existingUser, error: existingError } = await supabase
+      .from(TABLES.users)
+      .select('metadata')
+      .eq('supabase_id', req.params.supabaseId)
+      .maybeSingle();
 
-    if (!user) {
+    if (existingError) throw existingError;
+    if (!existingUser) {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    const metadata = {
+      ...(existingUser.metadata || {}),
+      totalEnquiriesMade: (existingUser.metadata?.totalEnquiriesMade || 0) + 1
+    };
+
+    const { error } = await supabase
+      .from(TABLES.users)
+      .update({ metadata, updated_at: new Date().toISOString() })
+      .eq('supabase_id', req.params.supabaseId);
+
+    if (error) throw error;
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });

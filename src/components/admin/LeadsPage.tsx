@@ -41,7 +41,8 @@ interface NoteHistory {
 }
 
 interface Lead {
-  _id: string;
+  _id?: string;
+  id?: string;
   name: string;
   email: string;
   phone: string;
@@ -196,7 +197,7 @@ export function LeadsPage() {
       });
       if (!response.ok) throw new Error('Failed to delete lead');
       
-      setLeads(leads.filter((l) => l._id !== id));
+      setLeads(leads.filter((l) => (l._id || l.id) !== id));
       toast({
         title: 'Success',
         description: 'Lead deleted successfully',
@@ -220,7 +221,7 @@ export function LeadsPage() {
       if (!response.ok) throw new Error('Failed to update priority');
       
       const updatedLead = await response.json();
-      setLeads(leads.map((l) => (l._id === id ? updatedLead : l)));
+      setLeads(leads.map((l) => ((l._id || l.id) === id ? updatedLead : l)));
       toast({
         title: 'Success',
         description: `Priority updated to ${PRIORITY_LABELS[newPriority]}`,
@@ -244,7 +245,7 @@ export function LeadsPage() {
       if (!response.ok) throw new Error('Failed to update status');
       
       const updatedLead = await response.json();
-      setLeads(leads.map((l) => (l._id === id ? updatedLead : l)));
+      setLeads(leads.map((l) => ((l._id || l.id) === id ? updatedLead : l)));
       
       const statusLabel = [...LEAD_ACTIONS.LEAD_STATUS, ...LEAD_ACTIONS.RESPONSE_STATUS]
         .find(s => s.value === newStatus)?.label || newStatus;
@@ -283,7 +284,7 @@ export function LeadsPage() {
 
       const notesHistory = [...(selectedLead.notesHistory || []), noteEntry];
 
-      const response = await fetch(`${API_BASE_URL}/api/leads/${selectedLead._id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/leads/${selectedLead._id || selectedLead.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notesHistory }),
@@ -291,7 +292,7 @@ export function LeadsPage() {
       if (!response.ok) throw new Error('Failed to save notes');
       
       const updatedLead = await response.json();
-      setLeads(leads.map((l) => (l._id === selectedLead._id ? updatedLead : l)));
+      setLeads(leads.map((l) => ((l._id || l.id) === (selectedLead._id || selectedLead.id) ? updatedLead : l)));
       setSelectedLead(updatedLead);
       setNotes('');
       toast({
@@ -499,7 +500,7 @@ export function LeadsPage() {
                   <TableBody>
                     {filteredLeads.length > 0 ? (
                       filteredLeads.map((lead) => (
-                        <TableRow key={lead._id}>
+                        <TableRow key={lead._id || lead.id}>
                           <TableCell>
                             <div>
                               <p className="font-medium">{lead.name}</p>
@@ -528,7 +529,7 @@ export function LeadsPage() {
                           <TableCell>
                             <Select
                               value={lead.priority}
-                              onValueChange={(value) => handlePriorityChange(lead._id, value)}
+                              onValueChange={(value) => handlePriorityChange(lead._id || lead.id || '', value)}
                             >
                               <SelectTrigger className="w-32">
                                 <SelectValue />
@@ -561,7 +562,7 @@ export function LeadsPage() {
                           <TableCell>
                             <div className="flex justify-end gap-2">
                               <DropdownMenu 
-                                open={showRejectionMenu === lead._id ? true : undefined}
+                                open={showRejectionMenu === (lead._id || lead.id) ? true : undefined}
                                 onOpenChange={(open) => {
                                   if (!open) setShowRejectionMenu(null);
                                 }}
@@ -573,7 +574,7 @@ export function LeadsPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-56">
-                                  {showRejectionMenu === lead._id ? (
+                                  {showRejectionMenu === (lead._id || lead.id) ? (
                                     <>
                                       <DropdownMenuLabel className="flex items-center justify-between">
                                         <span>Response Issues</span>
@@ -593,7 +594,7 @@ export function LeadsPage() {
                                         <DropdownMenuItem
                                           key={action.value}
                                           onClick={() => {
-                                            handleStatusUpdate(lead._id, action.value);
+                                            handleStatusUpdate(lead._id || lead.id || '', action.value);
                                             setShowRejectionMenu(null);
                                           }}
                                         >
@@ -607,7 +608,7 @@ export function LeadsPage() {
                                       {LEAD_ACTIONS.LEAD_STATUS.filter(a => a.value !== 'rejected').map((action) => (
                                         <DropdownMenuItem
                                           key={action.value}
-                                          onClick={() => handleStatusUpdate(lead._id, action.value)}
+                                          onClick={() => handleStatusUpdate(lead._id || lead.id || '', action.value)}
                                         >
                                           <span className="text-sm">{action.label}</span>
                                         </DropdownMenuItem>
@@ -615,7 +616,7 @@ export function LeadsPage() {
                                       <DropdownMenuItem
                                         onClick={(e) => {
                                           e.preventDefault();
-                                          setShowRejectionMenu(lead._id);
+                                          setShowRejectionMenu(lead._id || lead.id || '');
                                         }}
                                       >
                                         <span className="text-sm">Rejected</span>
@@ -650,7 +651,7 @@ export function LeadsPage() {
                               <Button
                                 size="icon"
                                 variant="outline"
-                                onClick={() => handleDeleteLead(lead._id)}
+                                onClick={() => handleDeleteLead(lead._id || lead.id || '')}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>

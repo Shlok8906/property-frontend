@@ -1,4 +1,4 @@
-// API utility for MongoDB backend
+// API utility for Supabase-backed server
 const API_BASE_URL = import.meta.env.VITE_API_URL 
   ? `${import.meta.env.VITE_API_URL}/api`
   : 'https://property-frontend-80y9.onrender.com/api';
@@ -124,7 +124,7 @@ export const propertyAPI = {
   },
 
   // Health check
-  async healthCheck(): Promise<{ status: string; mongodb: boolean }> {
+  async healthCheck(): Promise<{ status: string; supabase: boolean }> {
     const response = await fetch(`${API_BASE_URL}/health`);
     return response.json();
   },

@@ -30,7 +30,8 @@ import { Search, MessageSquare, Trash2, Eye, Mail, Phone, Clock } from 'lucide-r
 import { useToast } from '@/hooks/use-toast';
 
 interface ContactMessage {
-  _id: string;
+  _id?: string;
+  id?: string;
   name: string;
   phone: string;
   email: string;
@@ -272,7 +273,7 @@ export function MessagesPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredMessages.map((message) => (
-                      <TableRow key={message._id}>
+                      <TableRow key={message._id || message.id}>
                         <TableCell className="font-medium">{message.name}</TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1 text-sm">
@@ -313,7 +314,7 @@ export function MessagesPage() {
                             </Button>
                             <Select
                               value={message.status}
-                              onValueChange={(value) => handleUpdateStatus(message._id, value)}
+                              onValueChange={(value) => handleUpdateStatus(message._id || message.id || '', value)}
                             >
                               <SelectTrigger className="w-[120px] h-9">
                                 <SelectValue />
@@ -327,7 +328,7 @@ export function MessagesPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleDelete(message._id)}
+                              onClick={() => handleDelete(message._id || message.id || '')}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>

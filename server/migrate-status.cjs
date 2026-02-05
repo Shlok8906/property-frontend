@@ -1,28 +1,30 @@
-// Migration script to add status='active' to all existing properties
-require('dotenvx').config();
-const mongoose = require('mongoose');
+// Migration script to add status='active' to all existing legacy properties (Supabase)
+require('dotenv').config();
+const { createClient } = require('@supabase/supabase-js');
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/property-canvas';
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('❌ Missing Supabase environment variables. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
+  process.exit(1);
+}
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { persistSession: false }
+});
 
 async function migrate() {
   try {
-    await mongoose.connect(MONGODB_URI);
-    console.log('✅ Connected to MongoDB');
-    
-    const Property = mongoose.model('Property', new mongoose.Schema({}, { strict: false }));
-    
-    const result = await Property.updateMany(
-      { status: { $exists: false } },
-      { $set: { status: 'active' } }
-    );
-    
-    console.log(`✅ Migration completed: ${result.modifiedCount} properties updated`);
-    
-    // Verify
-    const count = await Property.countDocuments({ status: 'active' });
-    console.log(`✅ Total active properties: ${count}`);
-    
-    await mongoose.connection.close();
+    const { data, error } = await supabase
+      .from('legacy_properties')
+      .update({ status: 'active', updated_at: new Date().toISOString() })
+      .is('status', null)
+      .select('id');
+
+    if (error) throw error;
+
+    console.log(`✅ Migration completed: ${data?.length || 0} properties updated`);
     process.exit(0);
   } catch (error) {
     console.error('❌ Migration failed:', error);
