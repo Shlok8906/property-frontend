@@ -55,7 +55,7 @@ export default function Signup() {
         title: 'Welcome to Nivvaas',
         description: 'Your luxury journey begins now.',
       });
-      navigate('/', { replace: true });
+      navigate('/profile', { replace: true });
     }
   };
 
