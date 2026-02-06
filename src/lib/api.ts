@@ -178,3 +178,20 @@ export const statsAPI = {
     return response.json();
   },
 };
+
+export const userAPI = {
+  // Update user role
+  async updateRole(userId: string, role: 'admin' | 'customer'): Promise<{ success: boolean; message: string }> {
+    console.log('Calling updateRole API with:', { userId, role });
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/role`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role }),
+    });
+    console.log('API response status:', response.status);
+    if (!response.ok) throw new Error('Failed to update user role');
+    const data = await response.json();
+    console.log('API response data:', data);
+    return data;
+  },
+};

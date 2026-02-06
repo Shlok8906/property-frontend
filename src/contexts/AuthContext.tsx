@@ -79,7 +79,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Subscribe to changes in the user_roles table
+    const subscription = supabase
+      .from('user_roles')
+      .on('UPDATE', (payload) => {
+        console.log('Realtime subscription triggered:', payload);
+        if (payload.new.user_id === user?.id) {
+          console.log('Updating role to:', payload.new.role);
+          setRole(payload.new.role as UserRole);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
@@ -94,8 +108,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     });
 
-    // Track new user signup in MongoDB
     if (!error && data?.user) {
+      if (!data.session) {
+        // If email confirmations are disabled, try to create a session immediately.
+        await supabase.auth.signInWithPassword({ email, password });
+      }
+
       await trackUserLogin({
         supabaseId: data.user.id,
         email: data.user.email || email,
