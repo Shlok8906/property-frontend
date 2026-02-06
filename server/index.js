@@ -11,7 +11,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('❌ Missing Supabase environment variables. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
+  console.error('Missing Supabase environment variables. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
   process.exit(1);
 }
 
@@ -245,7 +245,6 @@ app.delete('/api/properties', async (req, res) => {
     if (error) throw error;
 
     const deletedCount = data?.length || 0;
-    console.log(`🗑️ Deleted ${deletedCount} properties`);
     res.json({
       success: true,
       deletedCount,
@@ -325,7 +324,6 @@ app.post('/api/properties/bulk', async (req, res) => {
 
       if (data?.length) {
         results.push(...data.map(mapPropertyFromDb));
-        console.log(`✅ Batch ${i / BATCH_SIZE + 1}: Inserted ${data.length} properties`);
       }
     }
 
@@ -335,7 +333,7 @@ app.post('/api/properties/bulk', async (req, res) => {
       properties: results
     });
   } catch (error) {
-    console.error('❌ Bulk import error:', error);
+    console.error('Bulk import error:', error);
     res.status(400).json({ error: error.message });
   }
 });
