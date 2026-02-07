@@ -14,6 +14,7 @@ import PropertyDetail from "./pages/PropertyDetail";
 import Contact from "./pages/Contact";
 import Profile from "./pages/Profile";
 import MyEnquiries from "./pages/MyEnquiries";
+import CityComingSoon from "./pages/CityComingSoon";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { PropertyManagement } from "@/components/admin/PropertyManagement";
 import ImageManager from "@/components/admin/ImageManager";
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/properties" element={<Properties />} />
             <Route path="/properties/:id" element={<PropertyDetail />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/city/:city" element={<CityComingSoon />} />
 
             {/* Protected Routes - Requires authentication */}
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

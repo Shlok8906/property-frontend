@@ -290,16 +290,18 @@ export default function Index() {
             <button className="px-4 py-2 bg-gray-200 text-gray-800 rounded-r-lg">City Guides</button>
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-6 px-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-4 sm:px-8 lg:px-12">
           {['Mumbai', 'Thane', 'Lucknow', 'Gurgaon', 'Bangalore', 'Delhi', 'Pune', 'Hyderabad', 'Navi Mumbai', 'Kolkata', 'Noida', 'Chennai'].map((city) => (
-            <div
+            <Link
               key={city}
-              className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg shadow-md cursor-pointer hover:bg-gray-100"
-              onClick={() => alert(`${city} - Coming Soon`)}
+              to={`/city/${encodeURIComponent(city)}`}
+              className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition-colors"
             >
-              <img src="/path/to/logo.png" alt="Logo" className="w-12 h-12 mb-2" />
+              <div className="w-12 h-12 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+                <Building2 className="h-6 w-6 text-primary" />
+              </div>
               <span className="text-gray-800 font-medium">{city}</span>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
