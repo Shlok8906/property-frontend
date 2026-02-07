@@ -155,6 +155,8 @@ export default function MyEnquiries() {
                             {enquiry.projects && (
                               <Link 
                                 to={`/properties/${enquiry.projects.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="group/link flex items-center gap-2 text-xl font-black text-foreground hover:text-primary transition-colors"
                               >
                                 {enquiry.projects.project_name}

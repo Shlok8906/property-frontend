@@ -71,7 +71,7 @@ export default function Signup() {
             <Building2 className="h-8 w-8 text-white" />
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-4xl font-black text-foreground tracking-tighter italic uppercase">
+            <CardTitle className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
               Join Nivvaas
             </CardTitle>
             <CardDescription className="text-muted-foreground font-bold uppercase text-[10px] tracking-[0.3em]">

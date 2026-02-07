@@ -44,7 +44,7 @@ function PropertyCard({ property }: { property: Property }) {
   }
 
   return (
-    <Link to={`/properties/${property._id || property.id}`}>
+    <Link to={`/properties/${property._id || property.id}`} target="_blank" rel="noopener noreferrer">
       <Card className="group relative overflow-hidden bg-card border-border rounded-[2rem] transition-all duration-500 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10">
         <div className="relative aspect-[4/3] overflow-hidden">
           {imageUrl ? (

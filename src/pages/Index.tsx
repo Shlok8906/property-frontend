@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { 
   Search, 
   MapPin, 
-  Building2, 
+  Building2,
+  Landmark,
   TrendingUp, 
   Shield, 
   Star,
@@ -15,11 +16,31 @@ import {
   Mail,
   Home,
   HandshakeIcon,
-  KeyRound
+  KeyRound,
+  Instagram,
+  Twitter,
+  Linkedin
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { propertyAPI } from '@/lib/api';
+
+function CityLogo({ src, alt }: { src: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return <Landmark className="h-6 w-6 text-primary" />;
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className="w-full h-full object-contain p-2 filter grayscale"
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 const popularLocations = [
   { name: 'Hinjewadi', count: '2,500+ Properties' },
@@ -281,28 +302,39 @@ export default function Index() {
       </section>
 
       {/* Explore Real Estate in Popular Indian Cities */}
-      <section className="py-24 bg-[#f9f9f9]">
-        <div className="container mb-12 text-center">
-          <h2 className="text-3xl font-black text-gray-800">Explore Real Estate in <span className="text-primary">Popular Indian Cities</span></h2>
-          <p className="text-gray-600 mt-4">Find high-end residences, reasonably priced apartments, and high-growth investments by exploring real estate in well-known Indian cities. Use professional advice and insights to navigate opportunities across metro hubs.</p>
-          <div className="flex justify-center mt-6">
-            <button className="px-4 py-2 bg-foreground text-background rounded-l-lg">Popular Indian Cities</button>
-            <button className="px-4 py-2 bg-gray-200 text-gray-800 rounded-r-lg">City Guides</button>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-4 sm:px-8 lg:px-12">
-          {['Mumbai', 'Thane', 'Lucknow', 'Gurgaon', 'Bangalore', 'Delhi', 'Pune', 'Hyderabad', 'Navi Mumbai', 'Kolkata', 'Noida', 'Chennai'].map((city) => (
+      <section className="py-20 bg-[#f5f6f8]">
+        <div className="container">
+          <div className="bg-white border border-gray-200 rounded-3xl p-8 sm:p-10 shadow-sm">
+            <div className="mb-8">
+              <h2 className="text-2xl sm:text-3xl font-black text-gray-800">Explore Real Estate in Popular Indian Cities</h2>
+              <p className="text-gray-600 mt-3 text-sm sm:text-base max-w-3xl">We have gathered top projects and rental options from India’s most active real estate markets. Explore city-wise data, builder names, and locality ratings to make better decisions.</p>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {['Mumbai', 'Thane', 'Lucknow', 'Gurgaon', 'Bangalore', 'Delhi', 'Pune', 'Hyderabad', 'Navi Mumbai', 'Kolkata', 'Noida', 'Chennai'].map((city) => {
+            const href = city === 'Pune' ? '/properties' : `/city/${encodeURIComponent(city)}`;
+            const cityLogoOverrides: Record<string, string> = {
+              Bangalore: '/citylogos/Bengaluru.png',
+              Hyderabad: '/citylogos/Hydrabad.png',
+            };
+            const logoSrc = cityLogoOverrides[city] || `/citylogos/${encodeURIComponent(city)}.png`;
+
+            return (
             <Link
               key={city}
-              to={`/city/${encodeURIComponent(city)}`}
-              className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition-colors"
+              to={href}
+              className="flex items-center border border-gray-200 rounded-xl bg-white hover:bg-gray-50 transition-colors overflow-hidden"
             >
-              <div className="w-12 h-12 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
-                <Building2 className="h-6 w-6 text-primary" />
+              <div className="w-20 h-16 sm:h-20 flex items-center justify-center border-r border-gray-200 bg-[#f6f8fb]">
+                <CityLogo src={logoSrc} alt={`${city} logo`} />
               </div>
-              <span className="text-gray-800 font-medium">{city}</span>
+              <div className="flex-1 px-4 py-4">
+                <span className="text-gray-800 font-medium text-sm sm:text-base">{city}</span>
+              </div>
             </Link>
-          ))}
+            );
+          })}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -364,10 +396,28 @@ export default function Index() {
           </div>
           <div className="pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-6 text-muted-foreground text-[10px] uppercase font-bold tracking-widest">
             <p>© 2024 Nivvaas. Handcrafted for Pune.</p>
-            <div className="flex gap-8">
-              <a href="#" className="hover:text-foreground transition-colors">Twitter</a>
-              <a href="#" className="hover:text-foreground transition-colors">LinkedIn</a>
-              <a href="#" className="hover:text-foreground transition-colors">Instagram</a>
+            <div className="flex gap-4">
+              <a
+                href="#"
+                aria-label="Twitter"
+                className="w-9 h-9 rounded-full border border-border flex items-center justify-center text-foreground/70 hover:text-foreground hover:border-foreground/40 transition-colors"
+              >
+                <Twitter className="h-4 w-4" />
+              </a>
+              <a
+                href="#"
+                aria-label="LinkedIn"
+                className="w-9 h-9 rounded-full border border-border flex items-center justify-center text-foreground/70 hover:text-foreground hover:border-foreground/40 transition-colors"
+              >
+                <Linkedin className="h-4 w-4" />
+              </a>
+              <a
+                href="#"
+                aria-label="Instagram"
+                className="w-9 h-9 rounded-full border border-border flex items-center justify-center text-foreground/70 hover:text-foreground hover:border-foreground/40 transition-colors"
+              >
+                <Instagram className="h-4 w-4" />
+              </a>
             </div>
           </div>
         </div>
