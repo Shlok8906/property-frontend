@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setIsLoading(false);
           }, 0);
         } else {
-          setRole(null);
+          setRole('customer');
           setIsLoading(false);
         }
       }
@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Subscribe to changes in the user_roles table
-    const subscription = supabase
+    const userRolesSubscription = supabase
       .from('user_roles')
       .on('UPDATE', (payload) => {
         console.log('Realtime subscription triggered:', payload);
@@ -92,7 +92,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      userRolesSubscription.unsubscribe();
+      authSubscription.unsubscribe();
     };
   }, []);
 
