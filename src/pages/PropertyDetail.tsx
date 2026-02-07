@@ -276,7 +276,7 @@ export default function PropertyDetail() {
                       <DialogContent className="max-w-7xl w-full p-0">
                         <DialogTitle className="hidden">{property.title} - Full size image</DialogTitle>
                         <DialogDescription className="hidden">Full size image gallery for {property.title}</DialogDescription>
-                        <div className="relative bg-black">
+                        <div className="relative bg-background">
                           <img 
                             src={allImages[selectedImageIndex]} 
                             alt={`${property.title} - Full size`}
@@ -285,7 +285,7 @@ export default function PropertyDetail() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="absolute top-2 right-2 text-white hover:bg-white/20"
+                            className="absolute top-2 right-2 text-foreground hover:bg-muted"
                             onClick={() => setShowImageModal(false)}
                           >
                             <X className="h-6 w-6" />
@@ -295,7 +295,7 @@ export default function PropertyDetail() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="absolute left-2 top-1/2 -translate-y-1/2 text-white hover:bg-white/20"
+                                className="absolute left-2 top-1/2 -translate-y-1/2 text-foreground hover:bg-muted"
                                 onClick={prevImage}
                               >
                                 <ChevronLeft className="h-8 w-8" />
@@ -303,14 +303,14 @@ export default function PropertyDetail() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-white hover:bg-white/20"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-foreground hover:bg-muted"
                                 onClick={nextImage}
                               >
                                 <ChevronRight className="h-8 w-8" />
                               </Button>
                             </>
                           )}
-                          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white bg-black/50 px-3 py-1 rounded-full text-sm">
+                          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-foreground bg-background/80 border border-border px-3 py-1 rounded-full text-sm">
                             {selectedImageIndex + 1} / {allImages.length}
                           </div>
                         </div>
@@ -335,7 +335,7 @@ export default function PropertyDetail() {
                         >
                           <ChevronRight className="h-5 w-5" />
                         </Button>
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/80 border border-border text-foreground px-3 py-1 rounded-full text-sm">
                           {selectedImageIndex + 1} / {allImages.length}
                         </div>
                       </>
@@ -343,7 +343,7 @@ export default function PropertyDetail() {
                   </>
                 ) : (
                   <div className="flex items-center justify-center h-full bg-gradient-to-br from-primary/20 to-secondary/20">
-                    <Building2 className="h-32 w-32 text-white/10" />
+                    <Building2 className="h-32 w-32 text-foreground/10" />
                   </div>
                 )}
               </div>
@@ -440,7 +440,7 @@ export default function PropertyDetail() {
                       <div className="font-medium">{property.carpetArea}</div>
                     </div>
                   )}
-                  {property.units && property.units > 0 && (
+                  {property.units != null && property.units > 0 && (
                     <div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Users className="h-4 w-4" />
