@@ -83,16 +83,16 @@ export default function MyEnquiries() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-[#030712] relative">
+      <div className="min-h-screen bg-background relative">
         {/* Subtle Background Glow */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
         
         <div className="container py-12 relative z-10">
           <div className="mb-10 space-y-2">
-            <h1 className="text-4xl font-black text-white tracking-tight">
+            <h1 className="text-4xl font-black text-foreground tracking-tight">
               My <span className="text-primary">Enquiries</span>
             </h1>
-            <p className="text-gray-500 font-medium">
+            <p className="text-muted-foreground font-medium">
               Keep track of your conversations with property developers.
             </p>
           </div>
@@ -100,18 +100,18 @@ export default function MyEnquiries() {
           {loading ? (
             <div className="space-y-6">
               {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-40 w-full rounded-3xl bg-white/5" />
+                <Skeleton key={i} className="h-40 w-full rounded-3xl bg-muted" />
               ))}
             </div>
           ) : enquiries.length === 0 ? (
-            <Card className="bg-white/5 border-white/10 rounded-[2.5rem] overflow-hidden">
+            <Card className="bg-card border-border rounded-[2.5rem] overflow-hidden">
               <CardContent className="py-20 text-center space-y-6">
                 <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-4">
                   <MessageSquare className="h-10 w-10 text-primary" />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-2xl font-bold text-white">Quiet in here...</h3>
-                  <p className="text-gray-500 max-w-sm mx-auto">
+                  <h3 className="text-2xl font-bold text-foreground">Quiet in here...</h3>
+                  <p className="text-muted-foreground max-w-sm mx-auto">
                     You haven't made any enquiries yet. Start exploring the finest properties in Pune.
                   </p>
                 </div>
@@ -128,7 +128,7 @@ export default function MyEnquiries() {
               {enquiries.map((enquiry) => (
                 <Card 
                   key={enquiry.id} 
-                  className="bg-white/5 border-white/10 rounded-[2rem] overflow-hidden hover:bg-white/[0.08] transition-all hover:border-primary/30 group"
+                  className="bg-card border-border rounded-[2rem] overflow-hidden hover:bg-muted transition-all hover:border-primary/30 group"
                 >
                   <div className="flex flex-col md:flex-row">
                     {/* Project Image/Icon */}
@@ -141,7 +141,7 @@ export default function MyEnquiries() {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
-                          <Building2 className="h-12 w-12 text-white/20" />
+                          <Building2 className="h-12 w-12 text-foreground/20" />
                         </div>
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent md:hidden" />
@@ -155,14 +155,14 @@ export default function MyEnquiries() {
                             {enquiry.projects && (
                               <Link 
                                 to={`/properties/${enquiry.projects.id}`}
-                                className="group/link flex items-center gap-2 text-xl font-black text-white hover:text-primary transition-colors"
+                                className="group/link flex items-center gap-2 text-xl font-black text-foreground hover:text-primary transition-colors"
                               >
                                 {enquiry.projects.project_name}
                                 <ExternalLink className="h-4 w-4 opacity-0 group-hover/link:opacity-100 transition-opacity" />
                               </Link>
                             )}
                             {enquiry.projects && (
-                              <div className="flex items-center gap-1.5 text-sm font-bold text-gray-500 uppercase tracking-widest">
+                              <div className="flex items-center gap-1.5 text-sm font-bold text-muted-foreground uppercase tracking-widest">
                                 <MapPin className="h-3 w-3 text-primary" />
                                 {enquiry.projects.location}
                               </div>
@@ -174,19 +174,19 @@ export default function MyEnquiries() {
                         </div>
 
                         {enquiry.message && (
-                          <div className="relative bg-black/40 p-4 rounded-2xl mb-6 border border-white/5">
-                            <p className="text-gray-400 text-sm leading-relaxed italic">
+                          <div className="relative bg-muted p-4 rounded-2xl mb-6 border border-border">
+                            <p className="text-muted-foreground text-sm leading-relaxed italic">
                               "{enquiry.message}"
                             </p>
                           </div>
                         )}
                       </div>
 
-                      <div className="flex flex-wrap items-center justify-between pt-6 border-t border-white/5 gap-4">
+                      <div className="flex flex-wrap items-center justify-between pt-6 border-t border-border gap-4">
                         <div className="flex items-center gap-6">
                            <div className="flex flex-col">
-                             <span className="text-[10px] uppercase tracking-tighter text-gray-600 font-bold">Inquiry Date</span>
-                             <div className="flex items-center gap-1.5 text-sm text-gray-400 font-medium">
+                             <span className="text-[10px] uppercase tracking-tighter text-muted-foreground font-bold">Inquiry Date</span>
+                             <div className="flex items-center gap-1.5 text-sm text-muted-foreground font-medium">
                                <Clock className="h-3 w-3 text-primary" />
                                {format(new Date(enquiry.created_at), 'MMMM do, yyyy')}
                              </div>
@@ -195,7 +195,7 @@ export default function MyEnquiries() {
                         
                         <div className="flex items-center gap-3">
                           <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                          <span className="text-[10px] font-bold text-white uppercase tracking-widest">Support Assigned</span>
+                          <span className="text-[10px] font-bold text-foreground uppercase tracking-widest">Support Assigned</span>
                         </div>
                       </div>
                     </div>

@@ -110,7 +110,7 @@ export default function Index() {
   return (
     <Layout>
       {/* Hero Section - Upgraded with Depth and Grain */}
-      <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-[#030712]">
+      <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-background">
         {/* Abstract Background Orbs */}
         <div className="absolute inset-0">
           <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
@@ -123,12 +123,12 @@ export default function Index() {
           <div className="max-w-5xl mx-auto text-center space-y-6 sm:space-y-8 lg:space-y-10 px-4 sm:px-6">
             <div className="space-y-4 sm:space-y-6">
               {/* Badge - responsive sizing */}
-              <span className="inline-block py-1 px-3 rounded-full bg-white/5 border border-white/10 text-primary text-xs sm:text-sm font-bold tracking-wider uppercase animate-fadeIn">
+              <span className="inline-block py-1 px-3 rounded-full bg-card border border-border text-primary text-xs sm:text-sm font-bold tracking-wider uppercase animate-fadeIn">
                 Premium Real Estate in Pune
               </span>
               
               {/* Main Heading - mobile-first typography */}
-              <h1 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tighter text-white leading-tight sm:leading-none break-words">
+              <h1 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tighter text-foreground leading-tight sm:leading-none break-words">
                 Your Future <br className="hidden sm:block" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-400 to-secondary animate-gradient-x">
                   Starts at Home
@@ -136,7 +136,7 @@ export default function Index() {
               </h1>
               
               {/* Subtitle - responsive text */}
-              <p className="text-gray-400 text-sm sm:text-base md:text-lg lg:text-xl max-w-2xl mx-auto leading-relaxed px-2 sm:px-0">
+              <p className="text-muted-foreground text-sm sm:text-base md:text-lg lg:text-xl max-w-2xl mx-auto leading-relaxed px-2 sm:px-0">
                 Skip the endless search. Discover curated luxury and verified comfort across Pune's finest neighborhoods.
               </p>
             </div>
@@ -146,7 +146,7 @@ export default function Index() {
           <div className="relative max-w-4xl mx-auto group px-4 sm:px-0 mt-8">
             <div className="absolute -inset-1 bg-gradient-to-r from-primary/40 to-secondary/40 rounded-[2.5rem] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
             
-            <form onSubmit={handleSearch} className="relative bg-black/40 backdrop-blur-2xl border border-white/10 p-3 sm:p-4 rounded-2xl sm:rounded-[2.2rem] shadow-2xl">
+            <form onSubmit={handleSearch} className="relative bg-card/80 backdrop-blur-2xl border border-border p-3 sm:p-4 rounded-2xl sm:rounded-[2.2rem] shadow-2xl">
               {/* Mobile: Stack vertically, Desktop: Side by side */}
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <div className="flex-1 sm:flex-[2] relative group/input order-2 sm:order-1">
@@ -156,7 +156,7 @@ export default function Index() {
                     placeholder="Enter locality..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-white/5 border-white/5 h-12 sm:h-16 pl-10 sm:pl-12 text-sm sm:text-base lg:text-lg rounded-xl sm:rounded-2xl focus:ring-primary/50 text-white placeholder:text-gray-500 transition-all w-full"
+                    className="bg-card border-border h-12 sm:h-16 pl-10 sm:pl-12 text-sm sm:text-base lg:text-lg rounded-xl sm:rounded-2xl focus:ring-primary/50 text-foreground placeholder:text-muted-foreground transition-all w-full"
                   />
                 </div>
                 <Button 
@@ -176,7 +176,7 @@ export default function Index() {
                     key={type.value}
                     type="button"
                     onClick={() => handleTransactionClick(type.value)}
-                    className="group px-6 py-3 rounded-2xl text-sm font-bold transition-all border bg-white/5 border-white/10 text-gray-300 hover:bg-primary hover:border-primary hover:text-white hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] flex items-center gap-2"
+                    className="group px-6 py-3 rounded-2xl text-sm font-bold transition-all border bg-card border-border text-foreground hover:bg-primary hover:border-primary hover:text-white hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] flex items-center gap-2"
                   >
                     <type.icon className="h-5 w-5" />
                     {type.name}
@@ -190,36 +190,36 @@ export default function Index() {
 
       {/* Floating Stats Section */}
       <section className="relative z-20 -mt-12 container">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-8 bg-[#0a0f1d]/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] shadow-3xl">
-          <div className="text-center group border-r border-white/5">
-            <div className="text-3xl md:text-4xl font-black text-white group-hover:text-primary transition-colors">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-8 bg-card/80 backdrop-blur-xl border border-border rounded-[2.5rem] shadow-3xl">
+          <div className="text-center group border-r border-border">
+            <div className="text-3xl md:text-4xl font-black text-foreground group-hover:text-primary transition-colors">
               {propertyCount > 0 ? `${propertyCount}+` : '1000+'}
             </div>
-            <div className="text-[10px] md:text-xs uppercase tracking-[0.2em] text-gray-500 font-bold mt-2">
+            <div className="text-[10px] md:text-xs uppercase tracking-[0.2em] text-muted-foreground font-bold mt-2">
               Properties Listed
             </div>
           </div>
-          <div className="text-center group border-r border-white/5">
-            <div className="text-3xl md:text-4xl font-black text-white group-hover:text-primary transition-colors">
+          <div className="text-center group border-r border-border">
+            <div className="text-3xl md:text-4xl font-black text-foreground group-hover:text-primary transition-colors">
               500+
             </div>
-            <div className="text-[10px] md:text-xs uppercase tracking-[0.2em] text-gray-500 font-bold mt-2">
+            <div className="text-[10px] md:text-xs uppercase tracking-[0.2em] text-muted-foreground font-bold mt-2">
               Trusted Builders
             </div>
           </div>
-          <div className="text-center group border-r border-white/5">
-            <div className="text-3xl md:text-4xl font-black text-white group-hover:text-primary transition-colors">
+          <div className="text-center group border-r border-border">
+            <div className="text-3xl md:text-4xl font-black text-foreground group-hover:text-primary transition-colors">
               2500+
             </div>
-            <div className="text-[10px] md:text-xs uppercase tracking-[0.2em] text-gray-500 font-bold mt-2">
+            <div className="text-[10px] md:text-xs uppercase tracking-[0.2em] text-muted-foreground font-bold mt-2">
               Happy Customers
             </div>
           </div>
           <div className="text-center group">
-            <div className="text-3xl md:text-4xl font-black text-white group-hover:text-primary transition-colors">
+            <div className="text-3xl md:text-4xl font-black text-foreground group-hover:text-primary transition-colors">
               50+
             </div>
-            <div className="text-[10px] md:text-xs uppercase tracking-[0.2em] text-gray-500 font-bold mt-2">
+            <div className="text-[10px] md:text-xs uppercase tracking-[0.2em] text-muted-foreground font-bold mt-2">
               Pune areas
             </div>
           </div>
@@ -227,12 +227,12 @@ export default function Index() {
       </section>
 
       {/* Popular Locations - Bento Grid Style */}
-      <section className="py-24 bg-[#030712]">
+      <section className="py-24 bg-background">
         <div className="container">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div className="space-y-2">
-              <h2 className="text-4xl font-black text-white tracking-tight">Prime <span className="text-primary">Localities</span></h2>
-              <p className="text-gray-500 font-medium">Find your spot in Pune's fastest growing hubs.</p>
+              <h2 className="text-4xl font-black text-foreground tracking-tight">Prime <span className="text-primary">Localities</span></h2>
+              <p className="text-muted-foreground font-medium">Find your spot in Pune's fastest growing hubs.</p>
             </div>
             <Link to="/properties" className="group flex items-center gap-2 text-primary font-bold hover:underline">
               View All Areas <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -244,13 +244,13 @@ export default function Index() {
               <Link
                 key={index}
                 to={`/properties?location=${encodeURIComponent(location.name)}`}
-                className="group relative h-40 bg-white/5 rounded-3xl border border-white/10 p-8 overflow-hidden hover:bg-white/10 transition-all hover:-translate-y-2"
+                className="group relative h-40 bg-card rounded-3xl border border-border p-8 overflow-hidden hover:bg-muted transition-all hover:-translate-y-2"
               >
-                <div className="absolute -right-4 -bottom-4 text-white/5 group-hover:text-primary/10 transition-colors">
+                <div className="absolute -right-4 -bottom-4 text-foreground/10 group-hover:text-primary/10 transition-colors">
                   <MapPin size={120} />
                 </div>
                 <div className="relative z-10 flex flex-col justify-between h-full">
-                  <h3 className="text-2xl font-black text-white">{location.name}</h3>
+                  <h3 className="text-2xl font-black text-foreground">{location.name}</h3>
                   <div className="flex items-center gap-2 text-primary text-sm font-bold">
                     {location.count} <MousePointer2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
@@ -262,17 +262,17 @@ export default function Index() {
       </section>
 
       {/* Features Section - Neumorphic Dark Style */}
-      <section className="py-24 bg-[#050a18] border-y border-white/5">
+      <section className="py-24 bg-background border-y border-border">
         <div className="container">
           <div className="grid md:grid-cols-3 gap-12">
             {features.map((feature, index) => (
               <div key={index} className="group space-y-6">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center border border-white/10 group-hover:scale-110 transition-transform">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center border border-border group-hover:scale-110 transition-transform">
                   <feature.icon className="h-7 w-7 text-primary" />
                 </div>
                 <div className="space-y-3">
-                  <h3 className="text-xl font-bold text-white">{feature.title}</h3>
-                  <p className="text-gray-400 leading-relaxed text-sm">{feature.description}</p>
+                  <h3 className="text-xl font-bold text-foreground">{feature.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed text-sm">{feature.description}</p>
                 </div>
               </div>
             ))}
@@ -286,7 +286,7 @@ export default function Index() {
           <h2 className="text-3xl font-black text-gray-800">Explore Real Estate in <span className="text-primary">Popular Indian Cities</span></h2>
           <p className="text-gray-600 mt-4">Find high-end residences, reasonably priced apartments, and high-growth investments by exploring real estate in well-known Indian cities. Use professional advice and insights to navigate opportunities across metro hubs.</p>
           <div className="flex justify-center mt-6">
-            <button className="px-4 py-2 bg-black text-white rounded-l-lg">Popular Indian Cities</button>
+            <button className="px-4 py-2 bg-foreground text-background rounded-l-lg">Popular Indian Cities</button>
             <button className="px-4 py-2 bg-gray-200 text-gray-800 rounded-r-lg">City Guides</button>
           </div>
         </div>
@@ -307,7 +307,7 @@ export default function Index() {
       </section>
 
       {/* Footer - Minimalist Dark */}
-      <footer className="pt-24 pb-12 bg-[#020610] border-t border-white/5">
+      <footer className="pt-24 pb-12 bg-background border-t border-border">
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-16 mb-20">
             {/* Brand Section */}
@@ -316,7 +316,7 @@ export default function Index() {
                 <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
                   <Building2 className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-2xl font-black tracking-tighter text-white">Nivvaas</span>
+                <span className="text-2xl font-black tracking-tighter text-foreground">Nivvaas</span>
               </div>
               <p className="text-gray-500 text-sm leading-relaxed">
                 Elevating the real estate experience in Pune. Verified, Transparent, Simplified.
@@ -325,7 +325,7 @@ export default function Index() {
 
             {/* Contact Information */}
             <div className="space-y-6">
-              <h4 className="text-white font-bold mb-6">Contact Us</h4>
+              <h4 className="text-foreground font-bold mb-6">Contact Us</h4>
               <div className="space-y-4">
                 <a href="tel:+919168596655" className="flex items-center gap-3 text-gray-500 hover:text-primary transition-colors group">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
@@ -353,7 +353,7 @@ export default function Index() {
 
             {/* Quick Links */}
             <div className="space-y-6">
-              <h4 className="text-white font-bold mb-6">Quick Links</h4>
+              <h4 className="text-foreground font-bold mb-6">Quick Links</h4>
               <ul className="space-y-4 text-sm text-gray-500">
                 <li><Link to="/properties" className="hover:text-primary transition-colors">Browse Properties</Link></li>
                 <li><Link to="/contact" className="hover:text-primary transition-colors">Contact Us</Link></li>
@@ -362,12 +362,12 @@ export default function Index() {
               </ul>
             </div>
           </div>
-          <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-gray-600 text-[10px] uppercase font-bold tracking-widest">
+          <div className="pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-6 text-muted-foreground text-[10px] uppercase font-bold tracking-widest">
             <p>© 2024 Nivvaas. Handcrafted for Pune.</p>
             <div className="flex gap-8">
-              <a href="#" className="hover:text-white transition-colors">Twitter</a>
-              <a href="#" className="hover:text-white transition-colors">LinkedIn</a>
-              <a href="#" className="hover:text-white transition-colors">Instagram</a>
+              <a href="#" className="hover:text-foreground transition-colors">Twitter</a>
+              <a href="#" className="hover:text-foreground transition-colors">LinkedIn</a>
+              <a href="#" className="hover:text-foreground transition-colors">Instagram</a>
             </div>
           </div>
         </div>

@@ -46,7 +46,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#030712] p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
       {/* Dynamic Background Orbs */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/15 rounded-full blur-[120px] animate-pulse" />
@@ -55,13 +55,13 @@ export default function Login() {
       {/* Back Button */}
       <Link 
         to="/" 
-        className="absolute top-8 left-8 flex items-center gap-2 text-gray-500 hover:text-white transition-colors group z-20"
+        className="absolute top-8 left-8 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group z-20"
       >
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         <span className="text-sm font-bold uppercase tracking-widest">Back to Home</span>
       </Link>
       
-      <Card className="w-full max-w-md relative bg-black/40 backdrop-blur-2xl border-white/10 shadow-3xl rounded-[2.5rem] overflow-hidden">
+      <Card className="w-full max-w-md relative bg-card/90 backdrop-blur-2xl border-border shadow-3xl rounded-[2.5rem] overflow-hidden">
         {/* Top Accent Line */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
         
@@ -70,10 +70,10 @@ export default function Login() {
             <Building2 className="h-8 w-8 text-white" />
           </div>
           <div className="space-y-2">
-            <CardTitle className="text-4xl font-black text-white tracking-tight">
+            <CardTitle className="text-4xl font-black text-foreground tracking-tight">
               Sign <span className="text-primary">In</span>
             </CardTitle>
-            <CardDescription className="text-gray-500 text-sm font-medium">
+            <CardDescription className="text-muted-foreground text-sm font-medium">
               Access your personalized Pune property dashboard
             </CardDescription>
           </div>
@@ -82,18 +82,18 @@ export default function Login() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-5 px-8">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">
+              <Label htmlFor="email" className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">
                 Email Address
               </Label>
               <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-primary transition-colors" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <Input
                   id="email"
                   type="email"
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-12 h-14 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/40 focus:border-primary text-white transition-all placeholder:text-gray-600"
+                  className="pl-12 h-14 bg-background border-border rounded-2xl focus:ring-primary/40 focus:border-primary text-foreground transition-all placeholder:text-muted-foreground"
                   required
                 />
               </div>
@@ -101,7 +101,7 @@ export default function Login() {
 
             <div className="space-y-2">
               <div className="flex justify-between items-center ml-1">
-                <Label htmlFor="password" className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                <Label htmlFor="password" className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
                   Password
                 </Label>
                 <a href="#" className="text-[10px] font-bold text-primary hover:underline uppercase tracking-tighter">
@@ -109,20 +109,20 @@ export default function Login() {
                 </a>
               </div>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-primary transition-colors" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-12 pr-12 h-14 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/40 focus:border-primary text-white transition-all placeholder:text-gray-600"
+                  className="pl-12 pr-12 h-14 bg-background border-border rounded-2xl focus:ring-primary/40 focus:border-primary text-foreground transition-all placeholder:text-muted-foreground"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -148,10 +148,10 @@ export default function Login() {
 
             <div className="relative w-full">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/5" />
+                <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
-                <span className="px-4 bg-[#0a0f1d] text-gray-500">New to the platform?</span>
+                <span className="px-4 bg-background text-muted-foreground">New to the platform?</span>
               </div>
             </div>
 
@@ -159,7 +159,7 @@ export default function Login() {
               type="button"
               variant="outline"
               asChild
-              className="w-full h-14 text-sm font-bold border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-2xl transition-all"
+              className="w-full h-14 text-sm font-bold border-border bg-card text-foreground hover:bg-muted rounded-2xl transition-all"
             >
               <Link to="/signup">Create a Free Account</Link>
             </Button>

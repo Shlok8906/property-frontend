@@ -45,7 +45,7 @@ function PropertyCard({ property }: { property: Property }) {
 
   return (
     <Link to={`/properties/${property._id || property.id}`}>
-      <Card className="group relative overflow-hidden bg-white/5 border-white/10 rounded-[2rem] transition-all duration-500 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10">
+      <Card className="group relative overflow-hidden bg-card border-border rounded-[2rem] transition-all duration-500 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10">
         <div className="relative aspect-[4/3] overflow-hidden">
           {imageUrl ? (
             <img
@@ -55,13 +55,13 @@ function PropertyCard({ property }: { property: Property }) {
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
-              <Building2 className="h-12 w-12 text-white/20" />
+              <Building2 className="h-12 w-12 text-foreground/20" />
             </div>
           )}
           
           {/* Status Overlay */}
           <div className="absolute top-4 left-4 flex gap-2">
-            <Badge className="bg-black/60 backdrop-blur-md border-white/10 text-white font-bold text-[10px] uppercase tracking-widest px-3 py-1">
+            <Badge className="bg-foreground/80 backdrop-blur-md border-border text-background font-bold text-[10px] uppercase tracking-widest px-3 py-1">
               {property.possession || 'Ready'}
             </Badge>
           </div>
@@ -79,12 +79,12 @@ function PropertyCard({ property }: { property: Property }) {
         <CardContent className="p-6 space-y-4">
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-black text-white group-hover:text-primary transition-colors truncate">
+              <h3 className="text-xl font-black text-foreground group-hover:text-primary transition-colors truncate">
                 {property.title}
               </h3>
               <ChevronRight className="h-5 w-5 text-gray-600 group-hover:text-primary group-hover:translate-x-1 transition-all" />
             </div>
-            <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500 uppercase tracking-tighter">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground uppercase tracking-tighter">
               <MapPin className="h-3 w-3 text-primary" />
               {property.location}
             </div>
@@ -92,8 +92,8 @@ function PropertyCard({ property }: { property: Property }) {
 
           <div className="flex items-end justify-between pt-2">
             <div>
-              <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1">Starting From</p>
-              <p className="text-2xl font-black text-white">
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Starting From</p>
+              <p className="text-2xl font-black text-foreground">
                 {formatPrice(property.price)}
               </p>
             </div>
@@ -115,20 +115,20 @@ function FilterSidebar({ searchQuery, setSearchQuery, selectedBhks, setSelectedB
   return (
     <div className="space-y-8">
       <div className="space-y-3">
-        <Label className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Search Locality</Label>
+        <Label className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Search Locality</Label>
         <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 group-focus-within:text-primary transition-colors" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input
             placeholder="Kothrud, Baner..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-12 h-12 bg-white/5 border-white/10 rounded-2xl text-white focus:border-primary focus:ring-primary/20 transition-all"
+            className="pl-12 h-12 bg-background border-border rounded-2xl text-foreground focus:border-primary focus:ring-primary/20 transition-all"
           />
         </div>
       </div>
 
       <div className="space-y-4">
-        <Label className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] ml-1">BHK Configuration</Label>
+        <Label className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">BHK Configuration</Label>
         {/* Responsive BHK grid: 2 cols mobile, 3 cols tablet, 4 cols desktop */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
           {bhkOptions.map((bhk) => (
@@ -144,7 +144,7 @@ function FilterSidebar({ searchQuery, setSearchQuery, selectedBhks, setSelectedB
               className={`flex items-center justify-center h-10 sm:h-12 rounded-lg sm:rounded-xl border cursor-pointer transition-all text-xs font-bold ${
                 selectedBhks.includes(bhk) 
                 ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' 
-                : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                : 'bg-card border-border text-muted-foreground hover:bg-muted'
               }`}
             >
               {bhk}
@@ -155,7 +155,7 @@ function FilterSidebar({ searchQuery, setSearchQuery, selectedBhks, setSelectedB
 
       <div className="space-y-6">
         <div className="flex justify-between items-end ml-1">
-          <Label className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Budget Range</Label>
+          <Label className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">Budget Range</Label>
           <span className="text-[10px] font-bold text-primary">{formatPrice(priceRange[1])}</span>
         </div>
         <div className="px-2">
@@ -166,7 +166,7 @@ function FilterSidebar({ searchQuery, setSearchQuery, selectedBhks, setSelectedB
             step={500000}
             className="py-4"
           />
-          <div className="flex justify-between text-[10px] font-bold text-gray-600 uppercase tracking-widest mt-2">
+          <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-2">
             <span>{formatPrice(priceRange[0])}</span>
             <span>{formatPrice(500000000)}</span>
           </div>
@@ -259,7 +259,7 @@ export default function Properties() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-[#030712] relative">
+      <div className="min-h-screen bg-background relative">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[150px] pointer-events-none" />
         
         <div className="container py-12 relative z-10">
@@ -268,29 +268,29 @@ export default function Properties() {
               <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-[0.3em] mb-2">
                 <TrendingUp className="h-4 w-4" /> Pune Real Estate
               </div>
-              <h1 className="text-5xl font-black text-white tracking-tighter">
+              <h1 className="text-5xl font-black text-foreground tracking-tighter">
                 Discover Your <span className="text-primary">Space.</span>
               </h1>
-              <p className="text-gray-500 font-medium">
+              <p className="text-muted-foreground font-medium">
                 {loading ? 'Scanning market...' : `Found ${filteredProperties.length} premium properties matches your criteria`}
               </p>
             </div>
 
             <div className="flex items-center gap-3">
               {(searchQuery || selectedBhks.length > 0) && (
-                <Button variant="ghost" onClick={clearFilters} className="text-gray-500 hover:text-white font-bold text-xs uppercase tracking-widest">
+                <Button variant="ghost" onClick={clearFilters} className="text-muted-foreground hover:text-foreground font-bold text-xs uppercase tracking-widest">
                   Reset
                 </Button>
               )}
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="outline" className="md:hidden h-12 px-6 rounded-2xl bg-white/5 border-white/10 text-white">
+                  <Button variant="outline" className="md:hidden h-12 px-6 rounded-2xl bg-card border-border text-foreground">
                     <SlidersHorizontal className="h-4 w-4 mr-2" /> Filters
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="bg-[#0a0f1d] border-white/10 text-white w-full sm:w-[400px]">
+                <SheetContent side="right" className="bg-background border-border text-foreground w-full sm:w-[400px]">
                   <SheetHeader className="mb-8">
-                    <SheetTitle className="text-2xl font-black text-white">Filters</SheetTitle>
+                    <SheetTitle className="text-2xl font-black text-foreground">Filters</SheetTitle>
                   </SheetHeader>
                   <FilterSidebar
                     searchQuery={searchQuery} setSearchQuery={setSearchQuery}
@@ -305,8 +305,8 @@ export default function Properties() {
 
           <div className="flex gap-12">
             <aside className="hidden md:block w-80 flex-shrink-0">
-              <div className="sticky top-28 bg-white/5 border border-white/10 rounded-[2.5rem] p-8">
-                <h2 className="text-xl font-black text-white mb-8 flex items-center gap-2">
+              <div className="sticky top-28 bg-card border border-border rounded-[2.5rem] p-8">
+                <h2 className="text-xl font-black text-foreground mb-8 flex items-center gap-2">
                   <Filter className="h-5 w-5 text-primary" /> Filter
                 </h2>
                 <FilterSidebar
@@ -322,15 +322,15 @@ export default function Properties() {
               {loading ? (
                 <div className="grid sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                   {[...Array(6)].map((_, i) => (
-                    <Skeleton key={i} className="aspect-[4/5] w-full rounded-[2rem] bg-white/5" />
+                    <Skeleton key={i} className="aspect-[4/5] w-full rounded-[2rem] bg-muted" />
                   ))}
                 </div>
               ) : filteredProperties.length === 0 ? (
-                <div className="text-center py-24 bg-white/5 rounded-[3rem] border border-white/5">
-                  <Building2 className="h-16 w-16 text-gray-700 mx-auto mb-6" />
-                  <h3 className="text-2xl font-bold text-white mb-2">No matches found</h3>
-                  <p className="text-gray-500 mb-8">Try expanding your search radius or budget.</p>
-                  <Button onClick={clearFilters} className="bg-white/10 hover:bg-white/20 text-white">Clear all filters</Button>
+                <div className="text-center py-24 bg-card rounded-[3rem] border border-border">
+                  <Building2 className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
+                  <h3 className="text-2xl font-bold text-foreground mb-2">No matches found</h3>
+                  <p className="text-muted-foreground mb-8">Try expanding your search radius or budget.</p>
+                  <Button onClick={clearFilters} className="bg-primary hover:bg-primary/90 text-white">Clear all filters</Button>
                 </div>
               ) : (
                 // Responsive grid: 1 col mobile, 2 cols tablet, 3 cols desktop, 4 cols large screens

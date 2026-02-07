@@ -81,7 +81,7 @@ export default function Profile() {
   if (initialLoading) {
     return (
       <Layout>
-        <div className="min-h-screen flex items-center justify-center bg-[#030712]">
+        <div className="min-h-screen flex items-center justify-center bg-background">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </Layout>
@@ -90,45 +90,45 @@ export default function Profile() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-[#030712] relative pb-20">
+      <div className="min-h-screen bg-background relative pb-20">
         {/* Abstract Background Decoration */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-64 bg-primary/10 blur-[120px] pointer-events-none" />
 
         <div className="container py-12 max-w-3xl relative z-10">
           <div className="mb-10">
-            <h1 className="text-4xl font-black text-white tracking-tight mb-2">
+            <h1 className="text-4xl font-black text-foreground tracking-tight mb-2">
               Account <span className="text-primary">Settings</span>
             </h1>
-            <p className="text-gray-500 font-medium">
+            <p className="text-muted-foreground font-medium">
               Manage your identity and contact preferences across Nivvaas.
             </p>
           </div>
 
           <div className="grid gap-8">
             {/* Header Card */}
-            <Card className="bg-white/5 border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl">
+            <Card className="bg-card border-border rounded-[2.5rem] overflow-hidden shadow-2xl">
               <CardContent className="p-8">
                 <div className="flex flex-col md:flex-row items-center gap-8">
                   <div className="relative group">
                     <div className="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-                    <Avatar className="h-24 w-24 border-4 border-[#030712] relative">
+                    <Avatar className="h-24 w-24 border-4 border-background relative">
                       <AvatarFallback className="bg-primary text-white text-3xl font-black">
                         {getInitials(user?.email || 'U')}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="absolute bottom-0 right-0 bg-emerald-500 h-6 w-6 rounded-full border-4 border-[#030712]" title="Account Verified" />
+                    <div className="absolute bottom-0 right-0 bg-emerald-500 h-6 w-6 rounded-full border-4 border-background" title="Account Verified" />
                   </div>
                   
                   <div className="text-center md:text-left space-y-3">
                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
-                      <h2 className="text-2xl font-bold text-white tracking-tight">
+                      <h2 className="text-2xl font-bold text-foreground tracking-tight">
                         {user?.email}
                       </h2>
                       <Badge className="bg-primary/20 text-primary border-primary/20 uppercase text-[10px] font-black px-3 py-1">
                         {role || 'Customer'}
                       </Badge>
                     </div>
-                    <div className="flex items-center justify-center md:justify-start gap-4 text-gray-500 text-sm">
+                    <div className="flex items-center justify-center md:justify-start gap-4 text-muted-foreground text-sm">
                       <span className="flex items-center gap-1">
                         <ShieldCheck className="h-4 w-4 text-emerald-500" /> Secure Account
                       </span>
@@ -142,15 +142,15 @@ export default function Profile() {
             </Card>
 
             {/* Form Card */}
-            <Card className="bg-white/5 border-white/10 rounded-[2.5rem] shadow-2xl">
+            <Card className="bg-card border-border rounded-[2.5rem] shadow-2xl">
               <CardHeader className="p-8 pb-0">
-                <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+                <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
                   <div className="p-2 bg-primary/10 rounded-lg">
                     <User className="h-5 w-5 text-primary" />
                   </div>
                   Personal Details
                 </CardTitle>
-                <CardDescription className="text-gray-500">
+                <CardDescription className="text-muted-foreground">
                   This information will be used for your property enquiries.
                 </CardDescription>
               </CardHeader>
@@ -158,46 +158,46 @@ export default function Profile() {
                 <form onSubmit={handleUpdateProfile} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="email" className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Registered Email</Label>
+                      <Label htmlFor="email" className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Registered Email</Label>
                       <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600" />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="email"
                           type="email"
                           value={user?.email || ''}
                           disabled
-                          className="pl-12 h-14 bg-white/[0.02] border-white/5 rounded-2xl text-gray-500 cursor-not-allowed"
+                          className="pl-12 h-14 bg-muted border-border rounded-2xl text-muted-foreground cursor-not-allowed"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="fullName" className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Display Name</Label>
+                      <Label htmlFor="fullName" className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Display Name</Label>
                       <div className="relative group">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 group-focus-within:text-primary transition-colors" />
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                         <Input
                           id="fullName"
                           type="text"
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           placeholder="Your full name"
-                          className="pl-12 h-14 bg-white/5 border-white/10 rounded-2xl focus:border-primary focus:ring-primary/20 text-white transition-all"
+                          className="pl-12 h-14 bg-background border-border rounded-2xl focus:border-primary focus:ring-primary/20 text-foreground transition-all"
                         />
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Contact Number</Label>
+                    <Label htmlFor="phone" className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Contact Number</Label>
                     <div className="relative group">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 group-focus-within:text-primary transition-colors" />
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                       <Input
                         id="phone"
                         type="tel"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="+91 98765 43210"
-                        className="pl-12 h-14 bg-white/5 border-white/10 rounded-2xl focus:border-primary focus:ring-primary/20 text-white transition-all"
+                        className="pl-12 h-14 bg-background border-border rounded-2xl focus:border-primary focus:ring-primary/20 text-foreground transition-all"
                       />
                     </div>
                   </div>
