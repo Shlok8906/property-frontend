@@ -81,14 +81,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Subscribe to changes in the user_roles table
     const userRolesSubscription = supabase
-      .from('user_roles')
-      .on('UPDATE', (payload) => {
-        console.log('Realtime subscription triggered:', payload);
-        if (payload.new.user_id === user?.id) {
-          console.log('Updating role to:', payload.new.role);
-          setRole(payload.new.role as UserRole);
+      .channel('user_roles')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'user_roles' },
+        (payload) => {
+          console.log('Realtime subscription triggered:', payload);
+          if (payload.new.user_id === user?.id) {
+            console.log('Updating role to:', payload.new.role);
+            setRole(payload.new.role as UserRole);
+          }
         }
-      })
+      )
       .subscribe();
 
     return () => {
