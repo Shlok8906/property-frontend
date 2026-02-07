@@ -167,19 +167,6 @@ export function CSVImportPage() {
           </AlertDescription>
         </Alert>
 
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-sm text-yellow-900 mb-3">
-            <strong>Note:</strong> If you've previously imported properties without image URLs, use the cleanup button below to delete them before re-importing with the fixed code.
-          </p>
-          <Button 
-            onClick={handleDeleteAll} 
-            variant="destructive"
-            className="gap-2"
-          >
-            🗑️ Delete All Properties (Cleanup)
-          </Button>
-        </div>
-
         <div>
           <CSVImporterAdvanced onImport={handleImport} />
         </div>
