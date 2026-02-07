@@ -280,37 +280,25 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Partners Carousel - Modern Scroll */}
-      <section className="py-24 bg-[#030712] overflow-hidden">
+      {/* Explore Real Estate in Popular Indian Cities */}
+      <section className="py-24 bg-[#f9f9f9]">
         <div className="container mb-12 text-center">
-            <h2 className="text-3xl font-black text-white">The Builders We <span className="text-primary">Trust</span></h2>
+          <h2 className="text-3xl font-black text-gray-800">Explore Real Estate in <span className="text-primary">Popular Indian Cities</span></h2>
+          <p className="text-gray-600 mt-4">Find high-end residences, reasonably priced apartments, and high-growth investments by exploring real estate in well-known Indian cities. Use professional advice and insights to navigate opportunities across metro hubs.</p>
+          <div className="flex justify-center mt-6">
+            <button className="px-4 py-2 bg-black text-white rounded-l-lg">Popular Indian Cities</button>
+            <button className="px-4 py-2 bg-gray-200 text-gray-800 rounded-r-lg">City Guides</button>
+          </div>
         </div>
-        
-        <div className="flex gap-8 animate-scroll hover:[animation-play-state:paused]">
-          <style>{`
-            @keyframes scroll {
-              from { transform: translateX(0); }
-              to { transform: translateX(-50%); }
-            }
-            .animate-scroll {
-              animation: scroll 30s linear infinite;
-              display: flex;
-              width: max-content;
-            }
-          `}</style>
-          
-          {[...partners, ...partners].map((partner, index) => (
+        <div className="grid grid-cols-4 gap-6 px-12">
+          {['Mumbai', 'Thane', 'Lucknow', 'Gurgaon', 'Bangalore', 'Delhi', 'Pune', 'Hyderabad', 'Navi Mumbai', 'Kolkata', 'Noida', 'Chennai'].map((city) => (
             <div
-              key={index}
-              className="flex-shrink-0 w-48 h-24 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center p-6 grayscale hover:grayscale-0 hover:bg-white/10 transition-all cursor-pointer"
+              key={city}
+              className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg shadow-md cursor-pointer hover:bg-gray-100"
+              onClick={() => alert(`${city} - Coming Soon`)}
             >
-              <img
-                src={partner.image}
-                alt={partner.name}
-                className="max-h-full object-contain"
-                onError={(e) => (e.currentTarget.style.display = 'none')}
-              />
-              <span className="text-gray-500 font-bold text-xs text-center">{partner.name}</span>
+              <img src="/path/to/logo.png" alt="Logo" className="w-12 h-12 mb-2" />
+              <span className="text-gray-800 font-medium">{city}</span>
             </div>
           ))}
         </div>
