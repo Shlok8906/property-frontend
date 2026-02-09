@@ -57,7 +57,7 @@ export function LoginDialog({ isOpen, onClose, message }: LoginDialogProps) {
         </div>
 
         <div className="mt-4 p-3 bg-primary/10 rounded-lg text-center text-sm text-muted-foreground">
-          🏠 Browse properties freely, but sign in to save enquiries and contact sellers.
+          Browse properties freely, but sign in to save enquiries and contact sellers.
         </div>
       </DialogContent>
     </Dialog>

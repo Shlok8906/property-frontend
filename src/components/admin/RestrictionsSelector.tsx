@@ -57,11 +57,11 @@ export function RestrictionsSelector({ selectedRestrictions, onChange }: Restric
               className={`flex flex-col items-center justify-center gap-1 h-auto py-3 transition-all ${
                 isSelected
                   ? 'bg-destructive text-destructive-foreground border-destructive'
-                  : 'border-2 hover:border-destructive hover:bg-destructive/5'
+                  : 'border-2 text-foreground hover:border-destructive hover:bg-destructive/5'
               }`}
             >
               <Icon className="h-5 w-5" />
-              <span className="text-xs font-medium text-center leading-tight">{restriction.label}</span>
+              <span className="text-xs font-medium text-center leading-tight text-foreground">{restriction.label}</span>
             </Button>
           );
         })}

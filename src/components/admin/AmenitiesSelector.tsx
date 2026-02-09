@@ -71,11 +71,11 @@ export function AmenitiesSelector({ selectedAmenities, onChange }: AmenitiesSele
               className={`flex flex-col items-center justify-center gap-1 h-auto py-3 transition-all ${
                 isSelected
                   ? 'bg-primary text-white border-primary'
-                  : 'border-2 bg-transparent text-white hover:border-primary hover:bg-primary/10 hover:text-white'
+                  : 'border-2 bg-transparent text-foreground hover:border-primary hover:bg-primary/10'
               }`}
             >
               <Icon className="h-5 w-5" />
-              <span className="text-xs font-medium text-center leading-tight">{amenity.label}</span>
+              <span className="text-xs font-medium text-center leading-tight text-foreground">{amenity.label}</span>
             </Button>
           );
         })}

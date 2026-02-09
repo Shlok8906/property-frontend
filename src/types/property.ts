@@ -35,7 +35,7 @@ export type Brokerage = 'no_brokerage' | '15_days' | '30_days' | 'custom';
 
 export const PROPERTY_TYPES: { value: PropertyType; label: string; icon: string }[] = [
   { value: 'apartment', label: 'Apartment', icon: '🏢' },
-  { value: 'independent_house', label: 'Independent House', icon: '🏠' },
+  { value: 'independent_house', label: 'Independent House', icon: '' },
   { value: 'duplex', label: 'Duplex', icon: '🏘️' },
   { value: 'independent_floor', label: 'Independent Floor', icon: '🏛️' },
   { value: 'villa', label: 'Villa', icon: '🏰' },

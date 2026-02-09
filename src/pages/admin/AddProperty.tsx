@@ -440,7 +440,7 @@ export default function AddPropertyPage() {
                     )}
                     onClick={() => setPropertyType(type.value)}
                   >
-                    <span className="text-2xl mb-2">{type.icon}</span>
+                    {type.icon ? <span className="text-2xl mb-2">{type.icon}</span> : null}
                     <span className="text-xs">{type.label}</span>
                   </Button>
                 ))}
