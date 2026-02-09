@@ -25,6 +25,19 @@ import { CSVImportPage } from "@/components/admin/CSVImportPage.new";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+export default function App() {
+  return (
+    <div style={{
+      background: 'red',
+      color: 'white',
+      fontSize: '32px',
+      padding: '30px',
+      textAlign: 'center'
+    }}>
+      🚨 DEPLOY TEST — {new Date().toISOString()}
+    </div>
+  );
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
