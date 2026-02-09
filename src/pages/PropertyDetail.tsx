@@ -595,3 +595,6 @@ export default function PropertyDetail() {
     </Layout>
   );
 }
+<div style={{ background: 'red', color: 'white', padding: '20px' }}>
+  DEPLOY CHECK – IF YOU SEE THIS, DEPLOY IS WORKING
+</div>
