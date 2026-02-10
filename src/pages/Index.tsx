@@ -19,11 +19,14 @@ import {
   KeyRound,
   Instagram,
   Twitter,
-  Linkedin
+  Linkedin,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { propertyAPI } from '@/lib/api';
+import { propertyAPI, Property as ApiProperty } from '@/lib/api';
+import { formatPrice } from '@/lib/utils';
 
 function CityLogo({ src, alt }: { src: string; alt: string }) {
   const [failed, setFailed] = useState(false);
@@ -102,6 +105,9 @@ const partners = [
 export default function Index() {
   const [searchQuery, setSearchQuery] = useState('');
   const [propertyCount, setPropertyCount] = useState(0);
+  const [topProjects, setTopProjects] = useState<ApiProperty[]>([]);
+  const [isTopProjectsHovered, setIsTopProjectsHovered] = useState(false);
+  const topProjectsRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
 
   // Fetch real property count from MongoDB
@@ -110,12 +116,33 @@ export default function Index() {
       try {
         const properties = await propertyAPI.getAll();
         setPropertyCount(properties.length);
+        setTopProjects(properties);
       } catch (error) {
         console.error('Error fetching property count:', error);
       }
     };
     fetchPropertyCount();
   }, []);
+
+  useEffect(() => {
+    const container = topProjectsRef.current;
+    if (!container || topProjects.length < 2 || isTopProjectsHovered) return;
+
+    const intervalId = window.setInterval(() => {
+      const card = container.querySelector('[data-project-card="true"]') as HTMLElement | null;
+      const step = card ? card.offsetWidth + 24 : container.clientWidth;
+      const nextScroll = container.scrollLeft + step;
+      const maxScroll = container.scrollWidth - container.clientWidth;
+
+      if (nextScroll >= maxScroll - 4) {
+        container.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        container.scrollTo({ left: nextScroll, behavior: 'smooth' });
+      }
+    }, 3500);
+
+    return () => window.clearInterval(intervalId);
+  }, [topProjects.length, isTopProjectsHovered]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,6 +153,24 @@ export default function Index() {
 
   const handleTransactionClick = (transactionValue: string) => {
     navigate(`/properties?type=${transactionValue}`);
+  };
+
+  const scrollTopProjects = (direction: 'left' | 'right') => {
+    const container = topProjectsRef.current;
+    if (!container) return;
+
+    const card = container.querySelector('[data-project-card="true"]') as HTMLElement | null;
+    const step = card ? card.offsetWidth + 24 : container.clientWidth;
+    const nextScroll = direction === 'left'
+      ? Math.max(container.scrollLeft - step, 0)
+      : container.scrollLeft + step;
+    const maxScroll = container.scrollWidth - container.clientWidth;
+
+    if (direction === 'right' && nextScroll >= maxScroll - 4) {
+      container.scrollTo({ left: 0, behavior: 'smooth' });
+    } else {
+      container.scrollTo({ left: nextScroll, behavior: 'smooth' });
+    }
   };
 
   return (
@@ -278,6 +323,133 @@ export default function Index() {
                 </div>
               </Link>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Top Projects - Auto Scrolling Carousel */}
+      <section className="py-24 bg-gradient-to-b from-background via-background to-primary/5">
+        <div className="container">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+            <div className="space-y-2">
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-primary/80">Top Projects</p>
+              <h2 className="text-4xl font-black text-foreground tracking-tight">
+                Top Projects in <span className="text-primary">Pune</span>
+              </h2>
+              <p className="text-muted-foreground max-w-2xl">
+                Explore curated homes and investments with verified builders, prime locations, and transparent pricing.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => scrollTopProjects('left')}
+                className="h-11 w-11 rounded-full border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center"
+                aria-label="Scroll projects left"
+              >
+                <ChevronLeft className="h-5 w-5 text-foreground" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollTopProjects('right')}
+                className="h-11 w-11 rounded-full border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center"
+                aria-label="Scroll projects right"
+              >
+                <ChevronRight className="h-5 w-5 text-foreground" />
+              </button>
+              <Link
+                to="/properties"
+                className="ml-1 inline-flex items-center gap-2 px-5 py-3 rounded-full bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors"
+              >
+                View More
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+
+          <div
+            ref={topProjectsRef}
+            onMouseEnter={() => setIsTopProjectsHovered(true)}
+            onMouseLeave={() => setIsTopProjectsHovered(false)}
+            onTouchStart={() => setIsTopProjectsHovered(true)}
+            onTouchEnd={() => setIsTopProjectsHovered(false)}
+            className="flex gap-6 overflow-x-auto pb-6 scroll-smooth snap-x snap-proximity"
+          >
+            {topProjects.length === 0 ? (
+              <div className="w-full border border-dashed border-border rounded-3xl p-10 text-center text-muted-foreground">
+                Projects are loading. Check back in a moment.
+              </div>
+            ) : (
+              topProjects.map((project) => {
+                const imageUrl = Array.isArray(project.images) && project.images.length > 0
+                  ? project.images[0]
+                  : project.image_url || null;
+                const projectTitle = project.projectName || project.title;
+                const projectId = project._id || project.id;
+
+                return (
+                  <Link
+                    key={projectId || projectTitle}
+                    to={projectId ? `/properties/${projectId}` : '/properties'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-project-card="true"
+                    className="group min-w-[280px] sm:min-w-[320px] lg:min-w-[360px] snap-start"
+                  >
+                    <div className="bg-card border border-border rounded-[2rem] overflow-hidden shadow-[0_18px_40px_rgba(16,24,40,0.08)] hover:shadow-[0_24px_50px_rgba(16,24,40,0.12)] transition-shadow">
+                      <div className="relative aspect-[4/3] overflow-hidden">
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={projectTitle}
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/15 via-secondary/10 to-muted">
+                            <Building2 className="h-12 w-12 text-foreground/20" />
+                          </div>
+                        )}
+                        {project.bhk && (
+                          <div className="absolute left-4 bottom-4 px-3 py-1 rounded-full bg-white/90 text-xs font-black text-foreground shadow-sm">
+                            {project.bhk}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-5 space-y-3">
+                        <h3 className="text-xl font-black text-foreground group-hover:text-primary transition-colors truncate">
+                          {projectTitle}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/80 bg-primary/10 px-2 py-1 rounded-full">
+                            {project.builder || 'Verified Builder'}
+                          </span>
+                          <span className="text-[10px] font-bold text-foreground/60 bg-muted px-2 py-1 rounded-full">
+                            {project.purpose || 'For Sale'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
+                          <MapPin className="h-3 w-3 text-primary" />
+                          <span className="truncate">{project.location}</span>
+                        </div>
+                        <div className="flex items-end justify-between pt-2">
+                          <div>
+                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Starting From</p>
+                            <p className="text-2xl font-black text-foreground">
+                              {formatPrice(project.price)}
+                            </p>
+                          </div>
+                          <span className="inline-flex items-center gap-2 text-primary font-bold text-sm">
+                            Explore
+                            <ArrowRight className="h-4 w-4" />
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })
+            )}
           </div>
         </div>
       </section>
