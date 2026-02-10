@@ -370,18 +370,18 @@ export default function Index() {
               <button
                 type="button"
                 onClick={() => scrollTopProjects('left')}
-                className="h-11 w-11 rounded-full border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center z-10"
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 h-12 w-12 rounded-full border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center z-10"
                 aria-label="Scroll projects left"
               >
-                <ChevronLeft className="h-5 w-5 text-foreground" />
+                <ChevronLeft className="h-6 w-6 text-foreground" />
               </button>
               <button
                 type="button"
                 onClick={() => scrollTopProjects('right')}
-                className="h-11 w-11 rounded-full border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center z-10"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-12 w-12 rounded-full border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center z-10"
                 aria-label="Scroll projects right"
               >
-                <ChevronRight className="h-5 w-5 text-foreground" />
+                <ChevronRight className="h-6 w-6 text-foreground" />
               </button>
               <Link
                 to="/properties"
@@ -399,7 +399,7 @@ export default function Index() {
             onMouseLeave={() => setIsTopProjectsHovered(false)}
             onTouchStart={() => setIsTopProjectsHovered(true)}
             onTouchEnd={() => setIsTopProjectsHovered(false)}
-            className="flex gap-6 overflow-x-auto pb-6 scroll-smooth snap-x snap-proximity"
+            className="flex gap-6 overflow-x-auto pb-6 scroll-smooth snap-x snap-proximity no-scrollbar"
           >
             {topProjects.length === 0 ? (
               <div className="w-full border border-dashed border-border rounded-3xl p-10 text-center text-muted-foreground">
