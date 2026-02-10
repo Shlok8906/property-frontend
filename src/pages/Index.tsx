@@ -139,7 +139,7 @@ export default function Index() {
       } else {
         container.scrollTo({ left: nextScroll, behavior: 'smooth' });
       }
-    }, 3500);
+    }, 2700);
 
     return () => window.clearInterval(intervalId);
   }, [topProjects.length, isTopProjectsHovered]);
@@ -161,16 +161,42 @@ export default function Index() {
 
     const card = container.querySelector('[data-project-card="true"]') as HTMLElement | null;
     const step = card ? card.offsetWidth + 24 : container.clientWidth;
-    const nextScroll = direction === 'left'
-      ? Math.max(container.scrollLeft - step, 0)
-      : container.scrollLeft + step;
     const maxScroll = container.scrollWidth - container.clientWidth;
 
-    if (direction === 'right' && nextScroll >= maxScroll - 4) {
-      container.scrollTo({ left: 0, behavior: 'smooth' });
+    if (direction === 'right') {
+      if (container.scrollLeft + step >= maxScroll) {
+        container.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        container.scrollBy({ left: step, behavior: 'smooth' });
+      }
     } else {
-      container.scrollTo({ left: nextScroll, behavior: 'smooth' });
+      if (container.scrollLeft - step <= 0) {
+        container.scrollTo({ left: maxScroll, behavior: 'smooth' });
+      } else {
+        container.scrollBy({ left: -step, behavior: 'smooth' });
+      }
     }
+
+    // Reset auto-scroll timer
+    resetAutoScroll();
+  };
+
+  // Auto-scroll functionality with 2.7-second interval
+  useEffect(() => {
+    const autoScroll = () => {
+      if (!isTopProjectsHovered) {
+        scrollTopProjects('right');
+      }
+    };
+
+    const interval = setInterval(autoScroll, 2700);
+    return () => clearInterval(interval);
+  }, [isTopProjectsHovered]);
+
+  // Reset auto-scroll timer when manually navigating
+  const resetAutoScroll = () => {
+    setIsTopProjectsHovered(true);
+    setTimeout(() => setIsTopProjectsHovered(false), 3000); // Resume auto-scroll after 3 seconds
   };
 
   return (
@@ -344,7 +370,7 @@ export default function Index() {
               <button
                 type="button"
                 onClick={() => scrollTopProjects('left')}
-                className="h-11 w-11 rounded-full border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center"
+                className="h-11 w-11 rounded-full border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center z-10"
                 aria-label="Scroll projects left"
               >
                 <ChevronLeft className="h-5 w-5 text-foreground" />
@@ -352,7 +378,7 @@ export default function Index() {
               <button
                 type="button"
                 onClick={() => scrollTopProjects('right')}
-                className="h-11 w-11 rounded-full border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center"
+                className="h-11 w-11 rounded-full border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center z-10"
                 aria-label="Scroll projects right"
               >
                 <ChevronRight className="h-5 w-5 text-foreground" />
