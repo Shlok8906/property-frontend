@@ -20,8 +20,7 @@ import {
   Instagram,
   Twitter,
   Linkedin,
-  ChevronLeft,
-  ChevronRight
+  ChevronLeft
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -367,28 +366,11 @@ export default function Index() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => scrollTopProjects('left')}
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 h-12 w-12 rounded-full border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center z-10"
-                aria-label="Scroll projects left"
-              >
-                <ChevronLeft className="h-6 w-6 text-foreground" />
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollTopProjects('right')}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-12 w-12 rounded-full border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center z-10"
-                aria-label="Scroll projects right"
-              >
-                <ChevronRight className="h-6 w-6 text-foreground" />
-              </button>
               <Link
                 to="/properties"
                 className="ml-1 inline-flex items-center gap-2 px-5 py-3 rounded-full bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors"
               >
                 View More
-                <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
@@ -507,30 +489,33 @@ export default function Index() {
               <h2 className="text-2xl sm:text-3xl font-black text-gray-800">Explore Real Estate in Popular Indian Cities</h2>
               <p className="text-gray-600 mt-3 text-sm sm:text-base max-w-3xl">We have gathered top projects and rental options from India’s most active real estate markets. Explore city-wise data, builder names, and locality ratings to make better decisions.</p>
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {['Mumbai', 'Thane', 'Lucknow', 'Gurgaon', 'Bangalore', 'Delhi', 'Pune', 'Hyderabad', 'Navi Mumbai', 'Kolkata', 'Noida', 'Chennai'].map((city) => {
-            const href = city === 'Pune' ? '/properties' : `/city/${encodeURIComponent(city)}`;
-            const cityLogoOverrides: Record<string, string> = {
-              Bangalore: '/citylogos/Bengaluru.png',
-              Hyderabad: '/citylogos/Hydrabad.png',
-            };
-            const logoSrc = cityLogoOverrides[city] || `/citylogos/${encodeURIComponent(city)}.png`;
-
-            return (
-            <Link
-              key={city}
-              to={href}
-              className="flex items-center border border-gray-200 rounded-xl bg-white hover:bg-gray-50 transition-colors overflow-hidden"
+            <div
+              className="grid grid-cols-2 gap-4 overflow-x-auto no-scrollbar"
+              style={{ scrollBehavior: 'smooth' }}
             >
-              <div className="w-20 h-16 sm:h-20 flex items-center justify-center border-r border-gray-200 bg-[#f6f8fb]">
-                <CityLogo src={logoSrc} alt={`${city} logo`} />
-              </div>
-              <div className="flex-1 px-4 py-4">
-                <span className="text-gray-800 font-medium text-sm sm:text-base">{city}</span>
-              </div>
-            </Link>
-            );
-          })}
+              {['Mumbai', 'Thane', 'Lucknow', 'Gurgaon', 'Bangalore', 'Delhi', 'Pune', 'Hyderabad', 'Navi Mumbai', 'Kolkata', 'Noida', 'Chennai'].map((city) => {
+                const href = city === 'Pune' ? '/properties' : `/city/${encodeURIComponent(city)}`;
+                const cityLogoOverrides: Record<string, string> = {
+                  Bangalore: '/citylogos/Bengaluru.png',
+                  Hyderabad: '/citylogos/Hydrabad.png',
+                };
+                const logoSrc = cityLogoOverrides[city] || `/citylogos/${encodeURIComponent(city)}.png`;
+
+                return (
+                  <Link
+                    key={city}
+                    to={href}
+                    className="flex flex-col items-center border border-gray-200 rounded-xl bg-white hover:bg-gray-50 transition-colors overflow-hidden"
+                  >
+                    <div className="w-full h-20 flex items-center justify-center border-b border-gray-200 bg-[#f6f8fb]">
+                      <CityLogo src={logoSrc} alt={`${city} logo`} />
+                    </div>
+                    <div className="flex-1 px-4 py-4">
+                      <span className="text-gray-800 font-medium text-sm sm:text-base">{city}</span>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>

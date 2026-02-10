@@ -122,3 +122,7 @@ img, video {
     transition-duration: 0.01ms !important;
   }
 }
+
+.text-muted-foreground {
+  color: black !important;
+}
