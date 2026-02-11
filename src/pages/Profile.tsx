@@ -27,7 +27,7 @@ export default function Profile() {
           .from('profiles')
           .select('full_name, phone')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
         if (data) {
           setFullName(data.full_name || '');
@@ -52,12 +52,12 @@ export default function Profile() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          id: user.id,
           full_name: fullName,
           phone: phone,
           updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
+        });
 
       if (error) throw error;
 

@@ -29,14 +29,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        console.warn('User role table not found or user role not set. Defaulting to customer role.');
-        // Return 'customer' as default role if table doesn't exist or no role found
+        console.warn('Error fetching user role, using default:', error);
         return 'customer';
       }
-      return data?.role as UserRole;
+
+      return (data?.role as UserRole) || 'customer';
     } catch (err) {
       console.warn('Error fetching user role, using default:', err);
       return 'customer';
@@ -117,6 +117,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!data.session) {
         // If email confirmations are disabled, try to create a session immediately.
         await supabase.auth.signInWithPassword({ email, password });
+      }
+
+      const now = new Date().toISOString();
+      const profilePayload = {
+        id: data.user.id,
+        full_name: fullName || null,
+        updated_at: now,
+      };
+
+      const rolePayload = {
+        user_id: data.user.id,
+        role: 'customer' as const,
+      };
+
+      const [{ error: profileError }, { error: roleError }] = await Promise.all([
+        supabase.from('profiles').upsert(profilePayload),
+        supabase.from('user_roles').upsert(rolePayload),
+      ]);
+
+      if (profileError) {
+        console.warn('Unable to create profile record:', profileError);
+      }
+
+      if (roleError) {
+        console.warn('Unable to create user role record:', roleError);
       }
 
       await trackUserLogin({
