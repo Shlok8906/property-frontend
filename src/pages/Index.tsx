@@ -317,41 +317,6 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Popular Locations - Bento Grid Style */}
-      <section className="py-24 bg-background">
-        <div className="container">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
-            <div className="space-y-2">
-              <h2 className="text-4xl font-black text-foreground tracking-tight">Prime <span className="text-primary">Localities</span></h2>
-              <p className="text-muted-foreground font-medium">Find your spot in Pune's fastest growing hubs.</p>
-            </div>
-            <Link to="/properties" className="group flex items-center gap-2 text-primary font-bold hover:underline">
-              View All Areas <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {popularLocations.map((location, index) => (
-              <Link
-                key={index}
-                to={`/properties?location=${encodeURIComponent(location.name)}`}
-                className="group relative h-40 bg-card rounded-3xl border border-border p-8 overflow-hidden hover:bg-muted transition-all hover:-translate-y-2"
-              >
-                <div className="absolute -right-4 -bottom-4 text-foreground/10 group-hover:text-primary/10 transition-colors">
-                  <MapPin size={120} />
-                </div>
-                <div className="relative z-10 flex flex-col justify-between h-full">
-                  <h3 className="text-2xl font-black text-foreground">{location.name}</h3>
-                  <div className="flex items-center gap-2 text-primary text-sm font-bold">
-                    {location.count} <MousePointer2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Top Projects - Auto Scrolling Carousel */}
       <section className="py-24 bg-gradient-to-b from-background via-background to-primary/5">
         <div className="container">
@@ -462,6 +427,50 @@ export default function Index() {
         </div>
       </section>
 
+      {/* Popular Locations - Bento Grid Style */}
+      <section className="py-24 bg-background">
+        <div className="container">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+            <div className="space-y-2">
+              <h2 className="text-4xl font-black text-foreground tracking-tight">Prime <span className="text-primary">Localities</span></h2>
+              <p className="text-muted-foreground font-medium">Find your spot in Pune's fastest growing hubs.</p>
+            </div>
+            <Link to="/properties" className="group flex items-center gap-2 text-primary font-bold hover:underline">
+              View All Areas <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+
+          <div
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8"
+            style={{ gridAutoRows: '1fr' }}
+          >
+            {['Mumbai', 'Thane', 'Lucknow', 'Gurgaon', 'Bangalore', 'Delhi', 'Pune', 'Hyderabad', 'Navi Mumbai', 'Kolkata', 'Noida', 'Chennai'].map((city) => {
+              const href = city === 'Pune' ? '/properties' : `/city/${encodeURIComponent(city)}`;
+              const cityLogoOverrides: Record<string, string> = {
+                Bangalore: '/citylogos/Bengaluru.png',
+                Hyderabad: '/citylogos/Hydrabad.png',
+              };
+              const logoSrc = cityLogoOverrides[city] || `/citylogos/${encodeURIComponent(city)}.png`;
+
+              return (
+                <Link
+                  key={city}
+                  to={href}
+                  className="flex flex-col items-center border border-gray-200 rounded-lg bg-white hover:scale-105 hover:translate-y-[-4px] transition-transform duration-300 ease-in-out shadow-md overflow-hidden"
+                >
+                  <div className="w-full h-16 sm:h-20 flex items-center justify-center border-b border-gray-200 bg-[#f6f8fb]">
+                    <CityLogo src={logoSrc} alt={`${city} logo`} className="h-8 w-8 sm:h-12 sm:w-12 lg:h-14 lg:w-14" />
+                  </div>
+                  <div className="flex-1 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6">
+                    <span className="text-gray-800 font-medium text-xs sm:text-sm lg:text-base text-center block truncate">{city}</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* Features Section - Neumorphic Dark Style */}
       <section className="py-24 bg-background border-y border-border">
         <div className="container">
@@ -477,46 +486,6 @@ export default function Index() {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Explore Real Estate in Popular Indian Cities */}
-      <section className="py-20 bg-[#f5f6f8]">
-        <div className="container">
-          <div className="bg-white border border-gray-200 rounded-3xl p-8 sm:p-10 shadow-sm">
-            <div className="mb-8">
-              <h2 className="text-2xl sm:text-3xl font-black text-gray-800">Explore Real Estate in Popular Indian Cities</h2>
-              <p className="text-gray-600 mt-3 text-sm sm:text-base max-w-3xl">We have gathered top projects and rental options from India’s most active real estate markets. Explore city-wise data, builder names, and locality ratings to make better decisions.</p>
-            </div>
-            <div
-              className="grid grid-cols-2 gap-4 overflow-x-auto no-scrollbar"
-              style={{ scrollBehavior: 'smooth' }}
-            >
-              {['Mumbai', 'Thane', 'Lucknow', 'Gurgaon', 'Bangalore', 'Delhi', 'Pune', 'Hyderabad', 'Navi Mumbai', 'Kolkata', 'Noida', 'Chennai'].map((city) => {
-                const href = city === 'Pune' ? '/properties' : `/city/${encodeURIComponent(city)}`;
-                const cityLogoOverrides: Record<string, string> = {
-                  Bangalore: '/citylogos/Bengaluru.png',
-                  Hyderabad: '/citylogos/Hydrabad.png',
-                };
-                const logoSrc = cityLogoOverrides[city] || `/citylogos/${encodeURIComponent(city)}.png`;
-
-                return (
-                  <Link
-                    key={city}
-                    to={href}
-                    className="flex flex-col items-center border border-gray-200 rounded-xl bg-white hover:bg-gray-50 transition-colors overflow-hidden"
-                  >
-                    <div className="w-full h-20 flex items-center justify-center border-b border-gray-200 bg-[#f6f8fb]">
-                      <CityLogo src={logoSrc} alt={`${city} logo`} />
-                    </div>
-                    <div className="flex-1 px-4 py-4">
-                      <span className="text-gray-800 font-medium text-sm sm:text-base">{city}</span>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
           </div>
         </div>
       </section>

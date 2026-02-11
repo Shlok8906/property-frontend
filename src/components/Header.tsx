@@ -99,7 +99,7 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 sm:h-11 sm:w-11 rounded-full hover:bg-primary/10 transition-colors shadow-card hover:shadow-glow p-0">
                     <Avatar className="h-10 w-10 sm:h-11 sm:w-11 border-2 border-primary/40 hover:border-primary/60 transition-colors">
-                      <AvatarFallback className="bg-gradient-primary text-white font-bold text-xs sm:text-sm">
+                      <AvatarFallback className="bg-gradient-primary text-black font-bold text-xs sm:text-sm">
                         {getInitials(user.email || 'U')}
                       </AvatarFallback>
                     </Avatar>
