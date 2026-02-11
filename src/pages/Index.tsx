@@ -26,6 +26,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { propertyAPI, Property as ApiProperty } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
+import { supabase } from '@/lib/supabase';
 
 function CityLogo({ src, alt }: { src: string; alt: string }) {
   const [failed, setFailed] = useState(false);
