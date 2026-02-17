@@ -19,28 +19,30 @@ import {
   KeyRound,
   Instagram,
   Twitter,
-  Linkedin,
-  ChevronLeft
+  Linkedin
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { propertyAPI, Property as ApiProperty } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
-import { supabase } from '@/lib/supabase';
+import { OptimizedImage } from '@/components/OptimizedImage';
 
-function CityLogo({ src, alt }: { src: string; alt: string }) {
+function CityLogo({ src, alt, className }: { src: string; alt: string; className?: string }) {
   const [failed, setFailed] = useState(false);
+  const logoSizeClass = className || 'w-full h-full';
 
   if (failed) {
-    return <Landmark className="h-6 w-6 text-primary" />;
+    return <Landmark className={`${logoSizeClass} text-primary`} />;
   }
 
   return (
     <img
       src={src}
       alt={alt}
-      className="w-full h-full object-contain p-2 filter grayscale"
+      className={`${logoSizeClass} object-contain p-2 filter grayscale`}
       onError={() => setFailed(true)}
+      loading="lazy"
+      decoding="async"
     />
   );
 }
@@ -110,39 +112,19 @@ export default function Index() {
   const topProjectsRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
 
-  // Fetch real property count from MongoDB
+  // Performance: request only card fields and first page for the homepage carousel.
   useEffect(() => {
     const fetchPropertyCount = async () => {
       try {
-        const properties = await propertyAPI.getAll();
-        setPropertyCount(properties.length);
-        setTopProjects(properties);
+        const response = await propertyAPI.list({ page: 1, limit: 8, fields: 'card' });
+        setPropertyCount(response.total);
+        setTopProjects(response.items);
       } catch (error) {
         console.error('Error fetching property count:', error);
       }
     };
     fetchPropertyCount();
   }, []);
-
-  useEffect(() => {
-    const container = topProjectsRef.current;
-    if (!container || topProjects.length < 2 || isTopProjectsHovered) return;
-
-    const intervalId = window.setInterval(() => {
-      const card = container.querySelector('[data-project-card="true"]') as HTMLElement | null;
-      const step = card ? card.offsetWidth + 24 : container.clientWidth;
-      const nextScroll = container.scrollLeft + step;
-      const maxScroll = container.scrollWidth - container.clientWidth;
-
-      if (nextScroll >= maxScroll - 4) {
-        container.scrollTo({ left: 0, behavior: 'smooth' });
-      } else {
-        container.scrollTo({ left: nextScroll, behavior: 'smooth' });
-      }
-    }, 2700);
-
-    return () => window.clearInterval(intervalId);
-  }, [topProjects.length, isTopProjectsHovered]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,7 +137,7 @@ export default function Index() {
     navigate(`/properties?type=${transactionValue}`);
   };
 
-  const scrollTopProjects = (direction: 'left' | 'right') => {
+  const scrollTopProjects = (direction: 'left' | 'right', isManual = true) => {
     const container = topProjectsRef.current;
     if (!container) return;
 
@@ -177,15 +159,16 @@ export default function Index() {
       }
     }
 
-    // Reset auto-scroll timer
-    resetAutoScroll();
+    if (isManual) {
+      resetAutoScroll();
+    }
   };
 
   // Auto-scroll functionality with 2.7-second interval
   useEffect(() => {
     const autoScroll = () => {
       if (!isTopProjectsHovered) {
-        scrollTopProjects('right');
+        scrollTopProjects('right', false);
       }
     };
 
@@ -373,10 +356,12 @@ export default function Index() {
                     <div className="bg-card border border-border rounded-[2rem] overflow-hidden shadow-[0_18px_40px_rgba(16,24,40,0.08)] hover:shadow-[0_24px_50px_rgba(16,24,40,0.12)] transition-shadow">
                       <div className="relative aspect-[4/3] overflow-hidden">
                         {imageUrl ? (
-                          <img
+                          <OptimizedImage
                             src={imageUrl}
                             alt={projectTitle}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            loading="lazy"
+                            fetchPriority="low"
+                            className="transition-transform duration-700 group-hover:scale-105"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/15 via-secondary/10 to-muted">

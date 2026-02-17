@@ -27,6 +27,23 @@ const TABLES = {
   users: 'user_tracking'
 };
 
+const PROPERTY_FULL_SELECT = '*';
+const PROPERTY_CARD_SELECT = 'id,title,location,bhk,price,purpose,builder,possession,project_name,image_url,images,status,created_at,updated_at';
+
+const toBoundedInt = (value, fallback, min, max) => {
+  const parsed = Number.parseInt(String(value ?? ''), 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, parsed));
+};
+
+const toOptionalNumber = (value) => {
+  if (value === undefined || value === null || value === '') return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const sanitizeLikeValue = (value = '') => String(value).replace(/[%_]/g, '').trim();
+
 const pickDefined = (obj) => Object.fromEntries(Object.entries(obj).filter(([, value]) => value !== undefined));
 
 const normalizeImages = (images, imageUrl) => {
@@ -218,16 +235,90 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.get('/api/properties', async (req, res) => {
   try {
     const includeHidden = req.query.includeHidden === 'true';
+    const page = toBoundedInt(req.query.page, 1, 1, 1000000);
+    const limit = toBoundedInt(req.query.limit, 20, 1, 40);
+    const fields = req.query.fields === 'card' ? 'card' : 'full';
+    const search = sanitizeLikeValue(req.query.search);
+    const type = sanitizeLikeValue(req.query.type);
+    const bhk = sanitizeLikeValue(req.query.bhk);
+    const bhkValues = bhk
+      ? bhk.split(',').map((value) => sanitizeLikeValue(value)).filter(Boolean)
+      : [];
+    const minPrice = toOptionalNumber(req.query.minPrice);
+    const maxPrice = toOptionalNumber(req.query.maxPrice);
 
-    let query = supabase.from(TABLES.properties).select('*').order('created_at', { ascending: false });
+    const isPaginatedRequest = [
+      req.query.page,
+      req.query.limit,
+      req.query.fields,
+      req.query.search,
+      req.query.type,
+      req.query.bhk,
+      req.query.minPrice,
+      req.query.maxPrice
+    ].some((value) => value !== undefined);
+
+    const selectFields = fields === 'card' ? PROPERTY_CARD_SELECT : PROPERTY_FULL_SELECT;
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    let query = supabase
+      .from(TABLES.properties)
+      .select(selectFields, { count: isPaginatedRequest ? 'exact' : undefined })
+      .order('created_at', { ascending: false });
+
     if (!includeHidden) {
       query = query.eq('status', 'active');
     }
 
-    const { data, error } = await query;
+    if (search) {
+      query = query.or(`location.ilike.%${search}%,title.ilike.%${search}%,builder.ilike.%${search}%`);
+    }
+
+    if (type) {
+      query = query.eq('purpose', type);
+    }
+
+    if (bhkValues.length === 1) {
+      query = query.eq('bhk', bhkValues[0]);
+    }
+
+    if (bhkValues.length > 1) {
+      query = query.in('bhk', bhkValues);
+    }
+
+    if (minPrice !== undefined) {
+      query = query.gte('price', minPrice);
+    }
+
+    if (maxPrice !== undefined) {
+      query = query.lte('price', maxPrice);
+    }
+
+    if (isPaginatedRequest) {
+      query = query.range(from, to);
+    }
+
+    const { data, error, count } = await query;
     if (error) throw error;
 
-    res.json((data || []).map(mapPropertyFromDb));
+    const mapped = (data || []).map(mapPropertyFromDb);
+
+    if (!isPaginatedRequest) {
+      return res.json(mapped);
+    }
+
+    const total = count || 0;
+    const totalPages = total > 0 ? Math.ceil(total / limit) : 1;
+
+    res.json({
+      items: mapped,
+      page,
+      limit,
+      total,
+      totalPages,
+      hasMore: page < totalPages
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

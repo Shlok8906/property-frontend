@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -6,18 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { propertyAPI, Property } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
+import { OptimizedImage } from '@/components/OptimizedImage';
 import { 
-  Search, 
+  Search,
   MapPin, 
-  Building2, 
-  Calendar,
+  Building2,
   Filter,
-  X,
   SlidersHorizontal,
   ChevronRight,
   TrendingUp
@@ -33,25 +31,26 @@ import {
 
 const bhkOptions = ['1 BHK', '2 BHK', '3 BHK', '4 BHK', '4+ BHK', 'Villa'];
 
-function PropertyCard({ property }: { property: Property }) {
+const INITIAL_PAGE = 1;
+const DEFAULT_LIMIT = 10;
+const DATA_SAVER_LIMIT = 8;
+
+const PropertyCard = memo(function PropertyCard({ property, priority = false }: { property: Property; priority?: boolean }) {
   const imageUrl = Array.isArray(property.images) && property.images.length > 0 
     ? property.images[0] 
     : property.image_url || null;
-  
-  // Debug: Log image data
-  if (!imageUrl) {
-    console.log('No image for property:', property.title, 'images:', property.images, 'image_url:', property.image_url);
-  }
 
   return (
     <Link to={`/properties/${property._id || property.id}`} target="_blank" rel="noopener noreferrer">
       <Card className="group relative overflow-hidden bg-card border-border rounded-[2rem] transition-all duration-500 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10">
         <div className="relative aspect-[4/3] overflow-hidden">
           {imageUrl ? (
-            <img
+            <OptimizedImage
               src={imageUrl}
               alt={property.title}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              loading={priority ? 'eager' : 'lazy'}
+              fetchPriority={priority ? 'high' : 'low'}
+              className="transition-transform duration-700 group-hover:scale-110"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
@@ -109,9 +108,19 @@ function PropertyCard({ property }: { property: Property }) {
       </Card>
     </Link>
   );
+});
+
+interface FilterSidebarProps {
+  searchQuery: string;
+  setSearchQuery: (value: string) => void;
+  selectedBhks: string[];
+  setSelectedBhks: (value: string[]) => void;
+  priceRange: [number, number];
+  setPriceRange: (value: [number, number]) => void;
+  onApply: () => void;
 }
 
-function FilterSidebar({ searchQuery, setSearchQuery, selectedBhks, setSelectedBhks, priceRange, setPriceRange, onApply }: any) {
+function FilterSidebar({ searchQuery, setSearchQuery, selectedBhks, setSelectedBhks, priceRange, setPriceRange, onApply }: FilterSidebarProps) {
   return (
     <div className="space-y-8">
       <div className="space-y-3">
@@ -183,78 +192,145 @@ function FilterSidebar({ searchQuery, setSearchQuery, selectedBhks, setSelectedB
 export default function Properties() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [properties, setProperties] = useState<Property[]>([]);
-  const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalProperties, setTotalProperties] = useState(0);
+  const [page, setPage] = useState(INITIAL_PAGE);
+
   const [searchQuery, setSearchQuery] = useState(searchParams.get('location') || '');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchParams.get('location') || '');
   const [selectedBhks, setSelectedBhks] = useState<string[]>(
-    searchParams.get('bhk') ? [searchParams.get('bhk')!] : []
+    searchParams.get('bhk')
+      ? searchParams.get('bhk')!.split(',').map((value) => value.trim()).filter(Boolean)
+      : []
   );
   const [selectedType, setSelectedType] = useState<string>(
     searchParams.get('type') || ''
   );
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 500000000]); // Max ₹50 Cr
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 500000000]);
 
-  const fetchProperties = async () => {
-    setLoading(true);
+  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  const pageLimit = useMemo(() => {
+    // Performance: reduce payload size on slow connections or data-saver mode.
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    return connection?.saveData ? DATA_SAVER_LIMIT : DEFAULT_LIMIT;
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
+  const activeFilters = useMemo(() => ({
+    search: debouncedSearchQuery,
+    bhks: selectedBhks,
+    type: selectedType,
+    minPrice: priceRange[0],
+    maxPrice: priceRange[1]
+  }), [debouncedSearchQuery, selectedBhks, selectedType, priceRange]);
+
+  const syncSearchParams = useCallback(() => {
+    const params = new URLSearchParams();
+    if (activeFilters.search) params.set('location', activeFilters.search);
+    if (activeFilters.bhks.length > 0) params.set('bhk', activeFilters.bhks.join(','));
+    if (activeFilters.type) params.set('type', activeFilters.type);
+    setSearchParams(params, { replace: true });
+  }, [activeFilters, setSearchParams]);
+
+  const fetchPage = useCallback(async (pageToFetch: number, append: boolean, signal?: AbortSignal) => {
+    const response = await propertyAPI.list({
+      page: pageToFetch,
+      limit: pageLimit,
+      fields: 'card',
+      search: activeFilters.search || undefined,
+      bhk: activeFilters.bhks.length > 0 ? activeFilters.bhks.join(',') : undefined,
+      type: activeFilters.type || undefined,
+      minPrice: activeFilters.minPrice,
+      maxPrice: activeFilters.maxPrice
+    }, signal);
+
+    // Performance: append incremental pages instead of re-rendering a full replaced list each time.
+    setProperties((current) => (append ? [...current, ...response.items] : response.items));
+    setTotalProperties(response.total);
+    setHasMore(response.hasMore);
+  }, [activeFilters, pageLimit]);
+
+  const fetchNextPage = useCallback(async () => {
+    if (!hasMore || loadingMore || loading) return;
+
+    const nextPage = page + 1;
+    setLoadingMore(true);
     try {
-      const data = await propertyAPI.getAll();
-      console.log('Fetched properties:', data.length, data);
-      setProperties(data);
-      applyFilters(data);
+      await fetchPage(nextPage, true);
+      setPage(nextPage);
     } catch (error) {
-      console.error('Error fetching properties:', error);
+      console.error('Error loading more properties:', error);
     } finally {
-      setLoading(false);
+      setLoadingMore(false);
     }
+  }, [fetchPage, hasMore, loadingMore, loading, page]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+
+    fetchPage(INITIAL_PAGE, false, controller.signal)
+      .then(() => {
+        setPage(INITIAL_PAGE);
+      })
+      .catch((error) => {
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Error fetching properties:', error);
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+
+    syncSearchParams();
+    return () => {
+      controller.abort();
+    };
+  }, [fetchPage, syncSearchParams]);
+
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: '300px 0px' }
+    );
+
+    if (loadMoreTriggerRef.current) {
+      observerRef.current.observe(loadMoreTriggerRef.current);
+    }
+
+    return () => observerRef.current?.disconnect();
+  }, [fetchNextPage]);
+
+  const applyFilters = () => {
+    syncSearchParams();
   };
-
-  const applyFilters = (data: Property[] = properties) => {
-    let filtered = [...data];
-    console.log('Applying filters to', data.length, 'properties');
-
-    // Search filter
-    if (searchQuery) {
-      filtered = filtered.filter(p => 
-        p.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.builder?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Transaction type filter (Buy/Rent/Lease)
-    if (selectedType) {
-      filtered = filtered.filter(p => p.purpose === selectedType);
-    }
-
-    // BHK filter
-    if (selectedBhks.length > 0) {
-      filtered = filtered.filter(p => p.bhk && selectedBhks.includes(p.bhk));
-    }
-
-    // Price filter
-    filtered = filtered.filter(p => {
-      if (!p.price) return true;
-      return p.price >= priceRange[0] && p.price <= priceRange[1];
-    });
-
-    console.log('Filtered down to', filtered.length, 'properties');
-    setFilteredProperties(filtered);
-  };
-
-  useEffect(() => { fetchProperties(); }, []);
-  useEffect(() => { 
-    console.log('Properties updated, applying filters', properties.length);
-    applyFilters(properties); 
-  }, [properties, searchQuery, selectedBhks, selectedType, priceRange]);
 
   const clearFilters = () => {
     setSearchQuery('');
+    setDebouncedSearchQuery('');
     setSelectedBhks([]);
     setSelectedType('');
     setPriceRange([0, 500000000]);
     setSearchParams({});
-    applyFilters(properties);
   };
 
   return (
@@ -272,7 +348,7 @@ export default function Properties() {
                 Discover Your <span className="text-primary">Space.</span>
               </h1>
               <p className="text-muted-foreground font-medium">
-                {loading ? 'Scanning market...' : `Found ${filteredProperties.length} premium properties matches your criteria`}
+                {loading ? 'Scanning market...' : `Found ${totalProperties} premium properties matching your criteria`}
               </p>
             </div>
 
@@ -296,7 +372,7 @@ export default function Properties() {
                     searchQuery={searchQuery} setSearchQuery={setSearchQuery}
                     selectedBhks={selectedBhks} setSelectedBhks={setSelectedBhks}
                     priceRange={priceRange} setPriceRange={setPriceRange}
-                    onApply={() => applyFilters()}
+                    onApply={applyFilters}
                   />
                 </SheetContent>
               </Sheet>
@@ -313,7 +389,7 @@ export default function Properties() {
                   searchQuery={searchQuery} setSearchQuery={setSearchQuery}
                   selectedBhks={selectedBhks} setSelectedBhks={setSelectedBhks}
                   priceRange={priceRange} setPriceRange={setPriceRange}
-                  onApply={() => applyFilters()}
+                  onApply={applyFilters}
                 />
               </div>
             </aside>
@@ -325,7 +401,7 @@ export default function Properties() {
                     <Skeleton key={i} className="aspect-[4/5] w-full rounded-[2rem] bg-muted" />
                   ))}
                 </div>
-              ) : filteredProperties.length === 0 ? (
+              ) : properties.length === 0 ? (
                 <div className="text-center py-24 bg-card rounded-[3rem] border border-border">
                   <Building2 className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
                   <h3 className="text-2xl font-bold text-foreground mb-2">No matches found</h3>
@@ -335,9 +411,15 @@ export default function Properties() {
               ) : (
                 // Responsive grid: 1 col mobile, 2 cols tablet, 3 cols desktop, 4 cols large screens
                 <div className="property-grid grid gap-3 sm:gap-4 md:gap-6 lg:gap-8">
-                  {filteredProperties.map((property) => (
-                    <PropertyCard key={property._id || property.id} property={property} />
+                  {properties.map((property, index) => (
+                    <PropertyCard key={property._id || property.id} property={property} priority={index === 0} />
                   ))}
+                </div>
+              )}
+
+              {!loading && properties.length > 0 && (
+                <div ref={loadMoreTriggerRef} className="py-8 text-center text-sm text-muted-foreground">
+                  {loadingMore ? 'Loading more properties…' : hasMore ? 'Scroll for more' : 'You reached the end'}
                 </div>
               )}
             </main>

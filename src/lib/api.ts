@@ -29,6 +29,27 @@ export interface Property {
   updated_at?: string;
 }
 
+export interface PropertyListParams {
+  includeHidden?: boolean;
+  page?: number;
+  limit?: number;
+  fields?: 'full' | 'card';
+  search?: string;
+  type?: string;
+  bhk?: string;
+  minPrice?: number;
+  maxPrice?: number;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
 export interface Enquiry {
   _id?: string;
   id?: string;
@@ -51,18 +72,48 @@ export interface DashboardStats {
 }
 
 export const propertyAPI = {
+  // Get paginated properties with optional server-side filtering
+  async list(params: PropertyListParams = {}, signal?: AbortSignal): Promise<PaginatedResponse<Property>> {
+    const query = new URLSearchParams();
+
+    if (params.includeHidden) query.set('includeHidden', 'true');
+    if (params.page) query.set('page', String(params.page));
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.fields) query.set('fields', params.fields);
+    if (params.search) query.set('search', params.search);
+    if (params.type) query.set('type', params.type);
+    if (params.bhk) query.set('bhk', params.bhk);
+    if (params.minPrice !== undefined) query.set('minPrice', String(params.minPrice));
+    if (params.maxPrice !== undefined) query.set('maxPrice', String(params.maxPrice));
+
+    const url = `${API_BASE_URL}/properties${query.toString() ? `?${query.toString()}` : ''}`;
+    const response = await fetch(url, { signal });
+    if (!response.ok) throw new Error('Failed to fetch properties');
+    const data = await response.json();
+
+    // Backward compatibility for environments still returning a plain array.
+    if (Array.isArray(data)) {
+      return {
+        items: data,
+        page: 1,
+        limit: data.length,
+        total: data.length,
+        totalPages: 1,
+        hasMore: false
+      };
+    }
+
+    return data;
+  },
+
   // Get all properties
   async getAll(includeHidden: boolean = false): Promise<Property[]> {
     const url = includeHidden 
       ? `${API_BASE_URL}/properties?includeHidden=true`
       : `${API_BASE_URL}/properties`;
-    console.log('Fetching from:', url);
     const response = await fetch(url);
-    console.log('Response status:', response.status);
     if (!response.ok) throw new Error('Failed to fetch properties');
-    const data = await response.json();
-    console.log('Received properties:', data.length, data);
-    return data;
+    return response.json();
   },
 
   // Get single property
@@ -182,16 +233,12 @@ export const statsAPI = {
 export const userAPI = {
   // Update user role
   async updateRole(userId: string, role: 'admin' | 'customer'): Promise<{ success: boolean; message: string }> {
-    console.log('Calling updateRole API with:', { userId, role });
     const response = await fetch(`${API_BASE_URL}/users/${userId}/role`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role }),
     });
-    console.log('API response status:', response.status);
     if (!response.ok) throw new Error('Failed to update user role');
-    const data = await response.json();
-    console.log('API response data:', data);
-    return data;
+    return response.json();
   },
 };
