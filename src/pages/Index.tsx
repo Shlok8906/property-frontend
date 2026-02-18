@@ -56,6 +56,8 @@ const popularLocations = [
   { name: 'Sus', count: '1,200+ Properties' },
 ];
 
+const searchRecommendations = ['Hijewadi', 'Sus', 'Pashan', 'Balewadi', 'Baner', 'Wakad'];
+
 const transactionTypes = [
   { name: 'Buy', icon: Home, value: 'sell' },
   { name: 'Rent', icon: KeyRound, value: 'rent' },
@@ -106,6 +108,7 @@ const partners = [
 
 export default function Index() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showRecommendations, setShowRecommendations] = useState(false);
   const [propertyCount, setPropertyCount] = useState(0);
   const [topProjects, setTopProjects] = useState<ApiProperty[]>([]);
   const [isTopProjectsHovered, setIsTopProjectsHovered] = useState(false);
@@ -123,15 +126,32 @@ export default function Index() {
         console.error('Error fetching property count:', error);
       }
     };
+
     fetchPropertyCount();
+
+    const interval = setInterval(fetchPropertyCount, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedQuery = searchQuery.trim();
+    if (!trimmedQuery) return;
+
     const params = new URLSearchParams();
-    if (searchQuery) params.set('location', searchQuery);
+    params.set('location', trimmedQuery);
     navigate(`/properties?${params.toString()}`);
   };
+
+  const handleRecommendationClick = (area: string) => {
+    setSearchQuery(area);
+    setShowRecommendations(false);
+    navigate(`/properties?location=${encodeURIComponent(area)}`);
+  };
+
+  const filteredRecommendations = searchRecommendations.filter((area) =>
+    area.toLowerCase().includes(searchQuery.trim().toLowerCase())
+  );
 
   const handleTransactionClick = (transactionValue: string) => {
     navigate(`/properties?type=${transactionValue}`);
@@ -185,7 +205,7 @@ export default function Index() {
   return (
     <Layout>
       {/* Hero Section - Upgraded with Depth and Grain */}
-      <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-background">
+      <section className="relative min-h-[85vh] flex items-center justify-center overflow-x-hidden overflow-y-visible bg-background">
         {/* Abstract Background Orbs */}
         <div className="absolute inset-0">
           <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
@@ -231,11 +251,28 @@ export default function Index() {
                     placeholder="Enter locality..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setShowRecommendations(true)}
+                    onBlur={() => setTimeout(() => setShowRecommendations(false), 150)}
                     className="bg-card border-border h-12 sm:h-16 pl-10 sm:pl-12 text-sm sm:text-base lg:text-lg rounded-xl sm:rounded-2xl focus:ring-primary/50 text-foreground placeholder:text-muted-foreground transition-all w-full"
                   />
+                  {showRecommendations && (
+                    <div className="absolute left-0 right-0 mt-2 z-30 rounded-xl border border-border bg-card shadow-2xl overflow-hidden" style={{maxHeight: '15rem', overflowY: 'auto'}}>
+                      {filteredRecommendations.map((area) => (
+                        <button
+                          key={area}
+                          type="button"
+                          onMouseDown={() => handleRecommendationClick(area)}
+                          className="w-full text-left px-4 py-3 text-sm sm:text-base text-foreground hover:bg-muted transition-colors"
+                        >
+                          {area}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <Button 
                   type="submit" 
+                  disabled={!searchQuery.trim()}
                   className="h-12 sm:h-16 px-6 sm:px-10 rounded-xl sm:rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-sm sm:text-base lg:text-lg shadow-lg shadow-primary/20 transition-transform active:scale-95 order-1 sm:order-2"
                 >
                   <Search className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
@@ -268,7 +305,7 @@ export default function Index() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-8 bg-card/80 backdrop-blur-xl border border-border rounded-[2.5rem] shadow-3xl">
           <div className="text-center group border-r border-border">
             <div className="text-3xl md:text-4xl font-black text-foreground group-hover:text-primary transition-colors">
-              {propertyCount > 0 ? `${propertyCount}+` : '1000+'}
+              {`${propertyCount}+`}
             </div>
             <div className="text-[10px] md:text-xs uppercase tracking-[0.2em] text-muted-foreground font-bold mt-2">
               Properties Listed
@@ -426,11 +463,8 @@ export default function Index() {
             </Link>
           </div>
 
-          <div
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8"
-            style={{ gridAutoRows: '1fr' }}
-          >
-            {['Mumbai', 'Thane', 'Lucknow', 'Gurgaon', 'Bangalore', 'Delhi', 'Pune', 'Hyderabad', 'Navi Mumbai', 'Kolkata', 'Noida', 'Chennai'].map((city) => {
+          <div className="max-w-6xl mx-auto flex flex-wrap justify-center gap-4 sm:gap-6 md:gap-8">
+            {['Mumbai', 'Bangalore', 'Hyderabad', 'Pune', 'Nagpur'].map((city) => {
               const href = city === 'Pune' ? '/properties' : `/city/${encodeURIComponent(city)}`;
               const cityLogoOverrides: Record<string, string> = {
                 Bangalore: '/citylogos/Bengaluru.png',
@@ -442,13 +476,15 @@ export default function Index() {
                 <Link
                   key={city}
                   to={href}
-                  className="flex flex-col items-center border border-gray-200 rounded-lg bg-white hover:scale-105 hover:translate-y-[-4px] transition-transform duration-300 ease-in-out shadow-md overflow-hidden"
+                  className="group w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1.5rem)] max-w-[420px] flex flex-col items-center border border-border rounded-2xl bg-card/90 backdrop-blur-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl overflow-hidden"
                 >
-                  <div className="w-full h-16 sm:h-20 flex items-center justify-center border-b border-gray-200 bg-[#f6f8fb]">
-                    <CityLogo src={logoSrc} alt={`${city} logo`} className="h-8 w-8 sm:h-12 sm:w-12 lg:h-14 lg:w-14" />
+                  <div className="w-full h-24 sm:h-28 flex items-center justify-center border-b border-border bg-muted/30">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border border-border bg-card flex items-center justify-center shadow-sm">
+                      <CityLogo src={logoSrc} alt={`${city} logo`} className="h-9 w-9 sm:h-12 sm:w-12" />
+                    </div>
                   </div>
-                  <div className="flex-1 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6">
-                    <span className="text-gray-800 font-medium text-xs sm:text-sm lg:text-base text-center block truncate">{city}</span>
+                  <div className="w-full px-4 py-5 sm:px-6 sm:py-6">
+                    <span className="text-foreground font-semibold text-xl text-center block truncate">{city}</span>
                   </div>
                 </Link>
               );
