@@ -28,7 +28,7 @@ const TABLES = {
 };
 
 const PROPERTY_FULL_SELECT = '*';
-const PROPERTY_CARD_SELECT = 'id,title,location,bhk,price,purpose,builder,possession,project_name,image_url,images,status,created_at,updated_at';
+const PROPERTY_CARD_SELECT = 'id,title,location,bhk,price,purpose,description,builder,possession,project_name,image_url,images,status,created_at,updated_at';
 
 const toBoundedInt = (value, fallback, min, max) => {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -62,6 +62,7 @@ const mapPropertyFromDb = (row) => ({
   type: row.type,
   category: row.category,
   purpose: row.purpose,
+  description: row.description,
   builder: row.builder,
   specification: row.specification,
   tower: row.tower,
@@ -88,6 +89,7 @@ const mapPropertyToDb = (property) => {
     type: property.type,
     category: property.category,
     purpose: property.purpose,
+    description: property.description,
     builder: property.builder,
     specification: property.specification,
     tower: property.tower,
