@@ -13,6 +13,7 @@ export interface Property {
   type: string;
   category: string;
   purpose: string;
+  description?: string;
   builder?: string;
   specification?: string;
   tower?: string;

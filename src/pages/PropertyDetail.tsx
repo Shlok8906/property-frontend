@@ -465,6 +465,18 @@ export default function PropertyDetail() {
               </CardContent>
             </Card>
 
+            {/* Description */}
+            {property.description && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Description</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{property.description}</p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Amenities */}
             {property.amenities && property.amenities.length > 0 && (
               <Card>
