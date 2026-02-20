@@ -1,7 +1,49 @@
 // API utility for Supabase-backed server
-const API_BASE_URL = import.meta.env.VITE_API_URL 
-  ? `${import.meta.env.VITE_API_URL}/api`
-  : 'https://property-frontend-80y9.onrender.com/api';
+
+const normalizeBaseUrl = (value: string) => value.replace(/\/+$/, '');
+
+const configuredApiUrl = import.meta.env.VITE_API_URL
+  ? normalizeBaseUrl(import.meta.env.VITE_API_URL)
+  : null;
+
+const fallbackApiUrl = import.meta.env.VITE_API_FALLBACK_URL
+  ? normalizeBaseUrl(import.meta.env.VITE_API_FALLBACK_URL)
+  : null;
+
+const apiOrigins = Array.from(
+  new Set([configuredApiUrl, fallbackApiUrl].filter(Boolean) as string[])
+);
+
+let propertyReadsTemporarilyDisabledUntil = 0;
+
+const withApiPrefix = (origin: string, path: string) => `${origin}/api${path}`;
+
+async function fetchWithApiFallback(path: string, init?: RequestInit): Promise<Response> {
+  let lastError: unknown = null;
+  let lastResponse: Response | null = null;
+
+  for (const origin of apiOrigins) {
+    try {
+      const response = await fetch(withApiPrefix(origin, path), init);
+      if (response.ok) {
+        return response;
+      }
+      lastResponse = response;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastResponse) {
+    return lastResponse;
+  }
+
+  if (lastError instanceof Error) {
+    throw lastError;
+  }
+
+  throw new Error('Unable to reach API endpoint.');
+}
 
 export interface Property {
   _id?: string;
@@ -75,6 +117,20 @@ export interface DashboardStats {
 export const propertyAPI = {
   // Get paginated properties with optional server-side filtering
   async list(params: PropertyListParams = {}, signal?: AbortSignal): Promise<PaginatedResponse<Property>> {
+    const requestedPage = params.page ?? 1;
+    const requestedLimit = params.limit ?? 20;
+
+    if (Date.now() < propertyReadsTemporarilyDisabledUntil) {
+      return {
+        items: [],
+        page: requestedPage,
+        limit: requestedLimit,
+        total: 0,
+        totalPages: 1,
+        hasMore: false,
+      };
+    }
+
     const query = new URLSearchParams();
 
     if (params.includeHidden) query.set('includeHidden', 'true');
@@ -87,46 +143,68 @@ export const propertyAPI = {
     if (params.minPrice !== undefined) query.set('minPrice', String(params.minPrice));
     if (params.maxPrice !== undefined) query.set('maxPrice', String(params.maxPrice));
 
-    const url = `${API_BASE_URL}/properties${query.toString() ? `?${query.toString()}` : ''}`;
-    const response = await fetch(url, { signal });
-    if (!response.ok) throw new Error('Failed to fetch properties');
-    const data = await response.json();
+    try {
+      const response = await fetchWithApiFallback(
+        `/properties${query.toString() ? `?${query.toString()}` : ''}`,
+        { signal }
+      );
 
-    // Backward compatibility for environments still returning a plain array.
-    if (Array.isArray(data)) {
+      if (!response.ok) {
+        throw new Error(`Failed to fetch properties (${response.status})`);
+      }
+
+      const data = await response.json();
+
+      // Backward compatibility for environments still returning a plain array.
+      if (Array.isArray(data)) {
+        return {
+          items: data,
+          page: 1,
+          limit: data.length,
+          total: data.length,
+          totalPages: 1,
+          hasMore: false
+        };
+      }
+
+      return data;
+    } catch (error) {
+      propertyReadsTemporarilyDisabledUntil = Date.now() + 60_000;
+
       return {
-        items: data,
-        page: 1,
-        limit: data.length,
-        total: data.length,
+        items: [],
+        page: requestedPage,
+        limit: requestedLimit,
+        total: 0,
         totalPages: 1,
-        hasMore: false
+        hasMore: false,
       };
     }
-
-    return data;
   },
 
   // Get all properties
   async getAll(includeHidden: boolean = false): Promise<Property[]> {
-    const url = includeHidden 
-      ? `${API_BASE_URL}/properties?includeHidden=true`
-      : `${API_BASE_URL}/properties`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Failed to fetch properties');
-    return response.json();
+    try {
+      const response = await fetchWithApiFallback(
+        includeHidden ? '/properties?includeHidden=true' : '/properties'
+      );
+      if (!response.ok) return [];
+      return response.json();
+    } catch {
+      return [];
+    }
   },
 
   // Get single property
   async getById(id: string): Promise<Property> {
-    const response = await fetch(`${API_BASE_URL}/properties/${id}`);
+    const response = await fetchWithApiFallback(`/properties/${id}`);
     if (!response.ok) throw new Error('Property not found');
     return response.json();
   },
 
   // Create property
   async create(property: Omit<Property, '_id' | 'created_at' | 'updated_at'>): Promise<Property> {
-    const response = await fetch(`${API_BASE_URL}/properties`, {
+    const response = await fetchWithApiFallback('/properties', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(property),
@@ -137,7 +215,7 @@ export const propertyAPI = {
 
   // Bulk create properties
   async createBulk(properties: Omit<Property, '_id' | 'created_at' | 'updated_at'>[]): Promise<{ success: boolean; count: number; properties: Property[] }> {
-    const response = await fetch(`${API_BASE_URL}/properties/bulk`, {
+    const response = await fetchWithApiFallback('/properties/bulk', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(properties),
@@ -148,7 +226,7 @@ export const propertyAPI = {
 
   // Delete all properties (for cleanup)
   async deleteAll(): Promise<{ success: boolean; deletedCount: number; message: string }> {
-    const response = await fetch(`${API_BASE_URL}/properties`, {
+    const response = await fetchWithApiFallback('/properties', {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Failed to delete all properties');
@@ -157,7 +235,7 @@ export const propertyAPI = {
 
   // Update property
   async update(id: string, property: Partial<Property>): Promise<Property> {
-    const response = await fetch(`${API_BASE_URL}/properties/${id}`, {
+    const response = await fetchWithApiFallback(`/properties/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(property),
@@ -168,7 +246,7 @@ export const propertyAPI = {
 
   // Delete property
   async delete(id: string): Promise<{ success: boolean }> {
-    const response = await fetch(`${API_BASE_URL}/properties/${id}`, {
+    const response = await fetchWithApiFallback(`/properties/${id}`, {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Failed to delete property');
@@ -177,7 +255,7 @@ export const propertyAPI = {
 
   // Health check
   async healthCheck(): Promise<{ status: string; supabase: boolean }> {
-    const response = await fetch(`${API_BASE_URL}/health`);
+    const response = await fetchWithApiFallback('/health');
     return response.json();
   },
 };
@@ -185,14 +263,14 @@ export const propertyAPI = {
 export const enquiryAPI = {
   // Get all enquiries
   async getAll(): Promise<Enquiry[]> {
-    const response = await fetch(`${API_BASE_URL}/enquiries`);
+    const response = await fetchWithApiFallback('/enquiries');
     if (!response.ok) throw new Error('Failed to fetch enquiries');
     return response.json();
   },
 
   // Create enquiry
   async create(enquiry: Omit<Enquiry, '_id' | 'created_at' | 'updated_at' | 'status'>): Promise<Enquiry> {
-    const response = await fetch(`${API_BASE_URL}/enquiries`, {
+    const response = await fetchWithApiFallback('/enquiries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(enquiry),
@@ -203,7 +281,7 @@ export const enquiryAPI = {
 
   // Update enquiry
   async update(id: string, enquiry: Partial<Enquiry>): Promise<Enquiry> {
-    const response = await fetch(`${API_BASE_URL}/enquiries/${id}`, {
+    const response = await fetchWithApiFallback(`/enquiries/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(enquiry),
@@ -214,7 +292,7 @@ export const enquiryAPI = {
 
   // Delete enquiry
   async delete(id: string): Promise<{ success: boolean }> {
-    const response = await fetch(`${API_BASE_URL}/enquiries/${id}`, {
+    const response = await fetchWithApiFallback(`/enquiries/${id}`, {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Failed to delete enquiry');
@@ -225,16 +303,32 @@ export const enquiryAPI = {
 export const statsAPI = {
   // Get dashboard statistics
   async getDashboardStats(): Promise<DashboardStats> {
-    const response = await fetch(`${API_BASE_URL}/stats`);
-    if (!response.ok) throw new Error('Failed to fetch stats');
-    return response.json();
+    try {
+      const response = await fetchWithApiFallback('/stats');
+      if (!response.ok) {
+        return {
+          totalProperties: 0,
+          totalEnquiries: 0,
+          newEnquiries: 0,
+          activeListings: 0,
+        };
+      }
+      return response.json();
+    } catch {
+      return {
+        totalProperties: 0,
+        totalEnquiries: 0,
+        newEnquiries: 0,
+        activeListings: 0,
+      };
+    }
   },
 };
 
 export const userAPI = {
   // Update user role
   async updateRole(userId: string, role: 'admin' | 'customer'): Promise<{ success: boolean; message: string }> {
-    const response = await fetch(`${API_BASE_URL}/users/${userId}/role`, {
+    const response = await fetchWithApiFallback(`/users/${userId}/role`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role }),

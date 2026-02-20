@@ -419,12 +419,6 @@ export default function PropertyDetail() {
                       <div className="font-medium">{property.projectName}</div>
                     </div>
                   )}
-                  {property.specification && (
-                    <div>
-                      <div className="text-sm text-muted-foreground">Specification</div>
-                      <div className="font-medium">{property.specification}</div>
-                    </div>
-                  )}
                   {property.tower && (
                     <div>
                       <div className="text-sm text-muted-foreground">Tower</div>
@@ -461,21 +455,15 @@ export default function PropertyDetail() {
                       <div className="font-medium">{property.salesPerson}</div>
                     </div>
                   )}
+                  {property.description && (
+                    <div className="col-span-2 md:col-span-3">
+                      <div className="text-sm text-muted-foreground mb-2">Description</div>
+                      <p className="font-medium whitespace-pre-wrap leading-relaxed">{property.description}</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
-
-            {/* Description */}
-            {property.description && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Description</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{property.description}</p>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Amenities */}
             {property.amenities && property.amenities.length > 0 && (

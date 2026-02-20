@@ -22,6 +22,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<UserRole>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const realtimeEnabled = import.meta.env.VITE_ENABLE_REALTIME === 'true';
+
+  const toAuthError = (err: unknown, fallbackMessage: string) => {
+    if (err instanceof Error) {
+      if (err.message.toLowerCase().includes('failed to fetch')) {
+        return new Error('Authentication service is unavailable. Please verify Supabase URL/keys in environment settings.');
+      }
+      return err;
+    }
+
+    return new Error(fallbackMessage);
+  };
 
   const fetchUserRole = async (userId: string) => {
     try {
@@ -79,97 +91,116 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // Subscribe to changes in the user_roles table
-    const userRolesSubscription = supabase
-      .channel('user_roles')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'user_roles' },
-        (payload) => {
-          console.log('Realtime subscription triggered:', payload);
-          if (payload.new.user_id === user?.id) {
-            console.log('Updating role to:', payload.new.role);
-            setRole(payload.new.role as UserRole);
-          }
-        }
-      )
-      .subscribe();
-
     return () => {
-      userRolesSubscription.unsubscribe();
       authSubscription.unsubscribe();
     };
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
-    const { error, data } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: {
-          full_name: fullName,
+  useEffect(() => {
+    if (!realtimeEnabled || !user?.id) return;
+
+    const userRolesSubscription = supabase
+      .channel(`user_roles:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_roles',
+          filter: `user_id=eq.${user.id}`,
         },
-      },
-    });
-
-    if (!error && data?.user) {
-      if (!data.session) {
-        // If email confirmations are disabled, try to create a session immediately.
-        await supabase.auth.signInWithPassword({ email, password });
-      }
-
-      const now = new Date().toISOString();
-      const profilePayload = {
-        id: data.user.id,
-        full_name: fullName || null,
-        updated_at: now,
-      };
-
-      const rolePayload = {
-        user_id: data.user.id,
-        role: 'customer' as const,
-      };
-
-      const [{ error: profileError }, { error: roleError }] = await Promise.all([
-        supabase.from('profiles').upsert(profilePayload),
-        supabase.from('user_roles').upsert(rolePayload),
-      ]);
-
-      if (profileError) {
-        console.warn('Unable to create profile record:', profileError);
-      }
-
-      if (roleError) {
-        console.warn('Unable to create user role record:', roleError);
-      }
-
-      await trackUserLogin({
-        supabaseId: data.user.id,
-        email: data.user.email || email,
-        fullName: fullName || 'User',
+        (payload) => {
+          setRole(payload.new.role as UserRole);
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('Realtime role updates unavailable, continuing without websocket updates.');
+        }
       });
-    }
 
-    return { error };
+    return () => {
+      userRolesSubscription.unsubscribe();
+    };
+  }, [realtimeEnabled, user?.id]);
+
+  const signUp = async (email: string, password: string, fullName: string) => {
+    try {
+      const { error, data } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
+
+      if (!error && data?.user) {
+        if (!data.session) {
+          // If email confirmations are disabled, try to create a session immediately.
+          await supabase.auth.signInWithPassword({ email, password });
+        }
+
+        const now = new Date().toISOString();
+        const profilePayload = {
+          id: data.user.id,
+          full_name: fullName || null,
+          updated_at: now,
+        };
+
+        const rolePayload = {
+          user_id: data.user.id,
+          role: 'customer' as const,
+        };
+
+        const [{ error: profileError }, { error: roleError }] = await Promise.all([
+          supabase.from('profiles').upsert(profilePayload),
+          supabase.from('user_roles').upsert(rolePayload),
+        ]);
+
+        if (profileError) {
+          console.warn('Unable to create profile record:', profileError);
+        }
+
+        if (roleError) {
+          console.warn('Unable to create user role record:', roleError);
+        }
+
+        await trackUserLogin({
+          supabaseId: data.user.id,
+          email: data.user.email || email,
+          fullName: fullName || 'User',
+        });
+      }
+
+      return { error };
+    } catch (err) {
+      return { error: toAuthError(err, 'Signup failed') };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error, data } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    // Track login in MongoDB if authentication successful
-    if (!error && data?.user) {
-      await trackUserLogin({
-        supabaseId: data.user.id,
-        email: data.user.email || email,
-        fullName: data.user.user_metadata?.full_name || 'User',
+    try {
+      const { error, data } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-    }
 
-    return { error };
+      // Track login in MongoDB if authentication successful
+      if (!error && data?.user) {
+        await trackUserLogin({
+          supabaseId: data.user.id,
+          email: data.user.email || email,
+          fullName: data.user.user_metadata?.full_name || 'User',
+        });
+      }
+
+      return { error };
+    } catch (err) {
+      return { error: toAuthError(err, 'Sign-in failed') };
+    }
   };
 
   const signOut = async () => {

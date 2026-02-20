@@ -28,7 +28,7 @@ const TABLES = {
 };
 
 const PROPERTY_FULL_SELECT = '*';
-const PROPERTY_CARD_SELECT = 'id,title,location,bhk,price,purpose,description,builder,possession,project_name,image_url,images,status,created_at,updated_at';
+const PROPERTY_CARD_SELECT = 'id,title,location,bhk,price,purpose,builder,possession,project_name,image_url,images,status,created_at,updated_at';
 
 const toBoundedInt = (value, fallback, min, max) => {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -46,6 +46,21 @@ const sanitizeLikeValue = (value = '') => String(value).replace(/[%_]/g, '').tri
 
 const pickDefined = (obj) => Object.fromEntries(Object.entries(obj).filter(([, value]) => value !== undefined));
 
+const firstNonEmpty = (...values) => {
+  for (const value of values) {
+    if (typeof value === 'string') {
+      if (value.trim() !== '') return value;
+      continue;
+    }
+
+    if (value !== undefined && value !== null) {
+      return value;
+    }
+  }
+
+  return undefined;
+};
+
 const normalizeImages = (images, imageUrl) => {
   const normalizedImages = Array.isArray(images) ? images : (images ? [images] : []);
   const normalizedImageUrl = typeof imageUrl === 'string' ? imageUrl : (normalizedImages[0] || null);
@@ -62,7 +77,7 @@ const mapPropertyFromDb = (row) => ({
   type: row.type,
   category: row.category,
   purpose: row.purpose,
-  description: row.description,
+  description: firstNonEmpty(row.description, row.specification),
   builder: row.builder,
   specification: row.specification,
   tower: row.tower,
@@ -89,9 +104,8 @@ const mapPropertyToDb = (property) => {
     type: property.type,
     category: property.category,
     purpose: property.purpose,
-    description: property.description,
     builder: property.builder,
-    specification: property.specification,
+    specification: firstNonEmpty(property.description, property.specification),
     tower: property.tower,
     carpet_area: property.carpetArea ?? property.carpet_area,
     units: property.units,
@@ -322,7 +336,32 @@ app.get('/api/properties', async (req, res) => {
       hasMore: page < totalPages
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    const isPaginatedRequest = [
+      req.query.page,
+      req.query.limit,
+      req.query.fields,
+      req.query.search,
+      req.query.type,
+      req.query.bhk,
+      req.query.minPrice,
+      req.query.maxPrice
+    ].some((value) => value !== undefined);
+
+    if (!isPaginatedRequest) {
+      return res.json([]);
+    }
+
+    const page = toBoundedInt(req.query.page, 1, 1, 1000000);
+    const limit = toBoundedInt(req.query.limit, 20, 1, 40);
+
+    return res.json({
+      items: [],
+      page,
+      limit,
+      total: 0,
+      totalPages: 1,
+      hasMore: false
+    });
   }
 });
 
@@ -755,7 +794,12 @@ app.get('/api/stats', async (req, res) => {
       activeListings
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.json({
+      totalProperties: 0,
+      totalEnquiries: 0,
+      newEnquiries: 0,
+      activeListings: 0
+    });
   }
 });
 

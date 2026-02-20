@@ -21,7 +21,7 @@ interface PropertyImage {
 }
 
 interface ImageManagerProps {
-  propertyId: string;
+  propertyId?: string;
 }
 
 export default function ImageManager({ propertyId }: ImageManagerProps) {
@@ -38,6 +38,12 @@ export default function ImageManager({ propertyId }: ImageManagerProps) {
   const [editFormData, setEditFormData] = useState({ alt_text: '' });
 
   const fetchImages = async () => {
+    if (!propertyId) {
+      setImages([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const { data, error } = await (supabase as any)
@@ -86,6 +92,15 @@ export default function ImageManager({ propertyId }: ImageManagerProps) {
   };
 
   const handleFiles = async (files: FileList) => {
+    if (!propertyId) {
+      toast({
+        title: 'Select Property',
+        description: 'Open image manager from a property to upload images.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!user) {
       toast({
         title: 'Error',

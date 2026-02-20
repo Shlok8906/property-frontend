@@ -3,7 +3,37 @@
  * Handles recording login events and user activity to MongoDB
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const PRODUCTION_API_URL = 'https://property-frontend-80y9.onrender.com';
+
+const normalizeBaseUrl = (value: string) => value.replace(/\/+$/, '');
+
+const configuredApiUrl = import.meta.env.VITE_API_URL
+  ? normalizeBaseUrl(import.meta.env.VITE_API_URL)
+  : null;
+
+const apiOrigins = Array.from(
+  new Set([configuredApiUrl, PRODUCTION_API_URL].filter(Boolean) as string[])
+);
+
+const withApiPrefix = (origin: string, path: string) => `${origin}/api${path}`;
+
+async function fetchWithApiFallback(path: string, init?: RequestInit): Promise<Response> {
+  let lastError: unknown = null;
+
+  for (const origin of apiOrigins) {
+    try {
+      return await fetch(withApiPrefix(origin, path), init);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastError instanceof Error) {
+    throw lastError;
+  }
+
+  throw new Error('Unable to reach API endpoint.');
+}
 
 interface TrackLoginParams {
   supabaseId: string;
@@ -18,7 +48,7 @@ interface TrackLoginParams {
  */
 export async function trackUserLogin(params: TrackLoginParams): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/users/track-login`, {
+    const response = await fetchWithApiFallback('/users/track-login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -48,7 +78,7 @@ export async function trackUserLogin(params: TrackLoginParams): Promise<void> {
  */
 export async function getUserData(supabaseId: string) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/users/${supabaseId}`, {
+    const response = await fetchWithApiFallback(`/users/${supabaseId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -71,8 +101,8 @@ export async function getUserData(supabaseId: string) {
  */
 export async function trackPropertyView(supabaseId: string): Promise<void> {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/api/users/${supabaseId}/track-property-view`,
+    const response = await fetchWithApiFallback(
+      `/users/${supabaseId}/track-property-view`,
       {
         method: 'POST',
         headers: {
@@ -94,8 +124,8 @@ export async function trackPropertyView(supabaseId: string): Promise<void> {
  */
 export async function trackEnquiry(supabaseId: string): Promise<void> {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/api/users/${supabaseId}/track-enquiry`,
+    const response = await fetchWithApiFallback(
+      `/users/${supabaseId}/track-enquiry`,
       {
         method: 'POST',
         headers: {
@@ -124,7 +154,7 @@ export async function updateUserProfile(
   }
 ): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/users/${supabaseId}`, {
+    const response = await fetchWithApiFallback(`/users/${supabaseId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -145,8 +175,8 @@ export async function updateUserProfile(
  */
 export async function getUserLoginHistory(supabaseId: string) {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/api/users/${supabaseId}/login-history`,
+    const response = await fetchWithApiFallback(
+      `/users/${supabaseId}/login-history`,
       {
         method: 'GET',
         headers: {
@@ -183,7 +213,7 @@ function getDeviceInfo(): string {
  */
 export async function getAllUsers() {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/users`, {
+    const response = await fetchWithApiFallback('/users', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -206,7 +236,7 @@ export async function getAllUsers() {
  */
 export async function getUserStats() {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/users/stats/overview`, {
+    const response = await fetchWithApiFallback('/users/stats/overview', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
