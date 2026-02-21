@@ -389,7 +389,7 @@ export function FloatingChatbot() {
       <Button
         type="button"
         size="icon"
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-xl"
+        className="fixed bottom-5 right-5 z-50 h-12 w-12 rounded-full shadow-xl sm:bottom-6 sm:right-6 sm:h-14 sm:w-14"
         onClick={() => setIsOpen((prev) => !prev)}
         aria-label="Toggle property chatbot"
       >
@@ -397,7 +397,7 @@ export function FloatingChatbot() {
       </Button>
 
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-[420px] max-w-[calc(100vw-2rem)]">
+        <div className="fixed bottom-20 right-4 left-4 z-50 w-auto sm:bottom-24 sm:right-6 sm:left-auto sm:w-[420px] sm:max-w-[calc(100vw-2rem)]">
           <Card className="overflow-hidden border-border/80 shadow-2xl">
             <div className="flex items-center justify-between bg-primary px-4 py-3 text-primary-foreground">
               <div>
@@ -411,7 +411,7 @@ export function FloatingChatbot() {
 
             <div
               ref={scrollContainerRef}
-              className="h-[480px] overflow-y-auto overscroll-contain bg-muted/20 p-4"
+              className="h-[360px] overflow-y-auto overscroll-contain bg-muted/20 p-4 sm:h-[480px]"
               onWheelCapture={(event) => {
                 event.stopPropagation();
               }}
