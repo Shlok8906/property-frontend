@@ -382,6 +382,18 @@ export default function PropertyDetail() {
                   </CardContent>
                 </Card>
               )}
+              {(property.purpose === 'rent' || property.deposit !== undefined) && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-sm text-muted-foreground mb-1">Deposit</div>
+                    <div className="text-2xl font-bold">
+                      {property.deposit !== undefined && property.deposit !== null && Number(property.deposit) > 0
+                        ? formatPrice(Number(property.deposit))
+                        : 'Not specified'}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               {property.possession && (
                 <Card>
                   <CardContent className="pt-6">

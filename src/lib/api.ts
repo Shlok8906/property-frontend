@@ -52,6 +52,7 @@ export interface Property {
   location: string;
   bhk: string;
   price: number;
+  deposit?: number | string;
   type: string;
   category: string;
   purpose: string;

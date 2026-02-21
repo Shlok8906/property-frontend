@@ -56,7 +56,7 @@ const popularLocations = [
   { name: 'Sus', count: '1,200+ Properties' },
 ];
 
-const searchRecommendations = ['Hijewadi', 'Sus', 'Pashan', 'Balewadi', 'Baner', 'Wakad'];
+const searchRecommendations = ['Hinjewadi', 'Sus', 'Pashan', 'Balewadi', 'Baner', 'Wakad'];
 
 const transactionTypes = [
   { name: 'Buy', icon: Home, value: 'sell' },

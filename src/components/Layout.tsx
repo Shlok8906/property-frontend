@@ -1,4 +1,5 @@
 import { Header } from './Header';
+import { FloatingChatbot } from './FloatingChatbot';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,6 +12,7 @@ export function Layout({ children }: LayoutProps) {
       <main className="flex-1">
         {children}
       </main>
+      <FloatingChatbot />
     </div>
   );
 }

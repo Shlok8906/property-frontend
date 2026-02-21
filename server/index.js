@@ -45,6 +45,7 @@ const toOptionalNumber = (value) => {
 const sanitizeLikeValue = (value = '') => String(value).replace(/[%_]/g, '').trim();
 
 const pickDefined = (obj) => Object.fromEntries(Object.entries(obj).filter(([, value]) => value !== undefined));
+const DEPOSIT_MARKER_REGEX = /\[deposit:([0-9]+(?:\.[0-9]+)?)\]/i;
 
 const firstNonEmpty = (...values) => {
   for (const value of values) {
@@ -61,41 +62,74 @@ const firstNonEmpty = (...values) => {
   return undefined;
 };
 
+const stripDepositMarker = (value) => {
+  if (typeof value !== 'string') return value;
+  return value.replace(DEPOSIT_MARKER_REGEX, '').trim();
+};
+
+const extractDepositFromSpecification = (value) => {
+  if (typeof value !== 'string') return undefined;
+  const match = value.match(DEPOSIT_MARKER_REGEX);
+  if (!match) return undefined;
+  const parsed = Number(match[1]);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const upsertDepositMarker = (specification, deposit) => {
+  const cleanedSpecification = stripDepositMarker(specification);
+  const depositNumber = toOptionalNumber(deposit);
+
+  if (depositNumber === undefined) {
+    return cleanedSpecification || undefined;
+  }
+
+  const marker = `[deposit:${depositNumber}]`;
+  return cleanedSpecification ? `${cleanedSpecification}\n${marker}` : marker;
+};
+
 const normalizeImages = (images, imageUrl) => {
   const normalizedImages = Array.isArray(images) ? images : (images ? [images] : []);
   const normalizedImageUrl = typeof imageUrl === 'string' ? imageUrl : (normalizedImages[0] || null);
   return { normalizedImages, normalizedImageUrl };
 };
 
-const mapPropertyFromDb = (row) => ({
-  _id: row.id,
-  id: row.id,
-  title: row.title,
-  location: row.location,
-  bhk: row.bhk,
-  price: row.price,
-  type: row.type,
-  category: row.category,
-  purpose: row.purpose,
-  description: firstNonEmpty(row.description, row.specification),
-  builder: row.builder,
-  specification: row.specification,
-  tower: row.tower,
-  carpetArea: row.carpet_area,
-  units: row.units,
-  possession: row.possession,
-  amenities: row.amenities,
-  projectName: row.project_name,
-  salesPerson: row.sales_person,
-  image_url: row.image_url,
-  images: row.images,
-  status: row.status,
-  created_at: row.created_at,
-  updated_at: row.updated_at
-});
+const mapPropertyFromDb = (row) => {
+  const specificationWithoutDeposit = stripDepositMarker(row.specification);
+  const extractedDeposit = extractDepositFromSpecification(row.specification);
+
+  return {
+    _id: row.id,
+    id: row.id,
+    title: row.title,
+    location: row.location,
+    bhk: row.bhk,
+    price: row.price,
+    deposit: extractedDeposit,
+    type: row.type,
+    category: row.category,
+    purpose: row.purpose,
+    description: firstNonEmpty(row.description, specificationWithoutDeposit),
+    builder: row.builder,
+    specification: specificationWithoutDeposit,
+    tower: row.tower,
+    carpetArea: row.carpet_area,
+    units: row.units,
+    possession: row.possession,
+    amenities: row.amenities,
+    projectName: row.project_name,
+    salesPerson: row.sales_person,
+    image_url: row.image_url,
+    images: row.images,
+    status: row.status,
+    created_at: row.created_at,
+    updated_at: row.updated_at
+  };
+};
 
 const mapPropertyToDb = (property) => {
   const { normalizedImages, normalizedImageUrl } = normalizeImages(property.images, property.image_url);
+  const specificationValue = firstNonEmpty(property.description, property.specification);
+
   return pickDefined({
     title: property.title,
     location: property.location,
@@ -105,7 +139,7 @@ const mapPropertyToDb = (property) => {
     category: property.category,
     purpose: property.purpose,
     builder: property.builder,
-    specification: firstNonEmpty(property.description, property.specification),
+    specification: upsertDepositMarker(specificationValue, property.deposit),
     tower: property.tower,
     carpet_area: property.carpetArea ?? property.carpet_area,
     units: property.units,

@@ -35,6 +35,8 @@ export function PropertyForm({ property, onSave, onCancel }: PropertyFormProps) 
     description: '',
     location: '',
     price: '',
+    rent: '',
+    deposit: '',
     type: 'apartment',
     category: 'residential' as PropertyCategory,
     purpose: 'sell' as PropertyPurpose,
@@ -80,6 +82,8 @@ export function PropertyForm({ property, onSave, onCancel }: PropertyFormProps) 
         description: property.description || '',
         location: property.location || '',
         price: property.price || '',
+        rent: property.rent || property.price || '',
+        deposit: property.deposit || '',
         type: property.type || 'apartment',
         category: property.category || 'residential',
         purpose: property.purpose || 'sell',
@@ -183,10 +187,13 @@ export function PropertyForm({ property, onSave, onCancel }: PropertyFormProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.location || !formData.price) {
+    const isRentPurpose = formData.purpose === 'rent';
+    const resolvedPrice = isRentPurpose ? formData.rent : formData.price;
+
+    if (!formData.title || !formData.location || !resolvedPrice) {
       toast({
         title: 'Validation Error',
-        description: 'Please fill in all required fields: Title, Location, and Price',
+        description: `Please fill in all required fields: Title, Location, and ${isRentPurpose ? 'Rent' : 'Price'}`,
         variant: 'destructive',
       });
       return;
@@ -195,6 +202,9 @@ export function PropertyForm({ property, onSave, onCancel }: PropertyFormProps) 
     // Set image_url to first image for backward compatibility
     const dataToSave = {
       ...formData,
+      price: resolvedPrice,
+      rent: isRentPurpose ? formData.rent : '',
+      deposit: isRentPurpose ? formData.deposit : '',
       image_url: formData.images.length > 0 ? formData.images[0] : undefined,
       images: formData.images,
       status: formData.status || 'active',
@@ -389,7 +399,7 @@ export function PropertyForm({ property, onSave, onCancel }: PropertyFormProps) 
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+          <div className={formData.purpose === 'rent' ? 'grid grid-cols-1 md:grid-cols-4 gap-6 mt-6' : 'grid grid-cols-1 md:grid-cols-3 gap-6 mt-6'}>
             <div>
               <Label htmlFor="bhk">BHK</Label>
               <Select value={formData.bhk} onValueChange={(value) => handleChange('bhk', value)}>
@@ -417,16 +427,42 @@ export function PropertyForm({ property, onSave, onCancel }: PropertyFormProps) 
               />
             </div>
 
-            <div>
-              <Label htmlFor="price">Price *</Label>
-              <Input
-                id="price"
-                type="number"
-                value={formData.price}
-                onChange={(e) => handleChange('price', e.target.value)}
-                placeholder="e.g., 500000"
-              />
-            </div>
+            {formData.purpose === 'rent' ? (
+              <>
+                <div>
+                  <Label htmlFor="rent">Rent *</Label>
+                  <Input
+                    id="rent"
+                    type="number"
+                    value={formData.rent}
+                    onChange={(e) => handleChange('rent', e.target.value)}
+                    placeholder="e.g., 25000"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="deposit">Deposit</Label>
+                  <Input
+                    id="deposit"
+                    type="number"
+                    value={formData.deposit}
+                    onChange={(e) => handleChange('deposit', e.target.value)}
+                    placeholder="e.g., 50000"
+                  />
+                </div>
+              </>
+            ) : (
+              <div>
+                <Label htmlFor="price">Price *</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) => handleChange('price', e.target.value)}
+                  placeholder="e.g., 500000"
+                />
+              </div>
+            )}
           </div>
         </div>
 
