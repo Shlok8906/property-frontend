@@ -87,6 +87,8 @@ const getSmtpTransport = () => {
 
   const host = process.env.SMTP_HOST;
   const port = Number.parseInt(process.env.SMTP_PORT || '587', 10);
+  const secure = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true' || port === 465;
+  const hostIpOverride = String(process.env.SMTP_HOST_IPV4 || '').trim();
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
 
@@ -95,13 +97,22 @@ const getSmtpTransport = () => {
   }
 
   smtpTransport = nodemailer.createTransport({
-    host,
+    host: hostIpOverride || host,
     port,
-    family: 4,
-    secure: port === 465,
+    secure,
     connectionTimeout: SMTP_CONNECTION_TIMEOUT_MS,
     greetingTimeout: SMTP_GREETING_TIMEOUT_MS,
     socketTimeout: SMTP_SOCKET_TIMEOUT_MS,
+    lookup: (hostname, options, callback) => {
+      const nextOptions = typeof options === 'object' && options !== null
+        ? { ...options, family: 4, all: false, verbatim: false }
+        : { family: 4, all: false, verbatim: false };
+      dns.lookup(hostname, nextOptions, callback);
+    },
+    tls: {
+      servername: host,
+      minVersion: 'TLSv1.2'
+    },
     auth: {
       user,
       pass
