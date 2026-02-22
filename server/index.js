@@ -3,9 +3,15 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
+import dns from 'dns';
 import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
+
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -88,6 +94,7 @@ const getSmtpTransport = () => {
   smtpTransport = nodemailer.createTransport({
     host,
     port,
+    family: 4,
     secure: port === 465,
     auth: {
       user,
@@ -125,7 +132,7 @@ const sendOtpEmail = async ({ email, otp, purpose }) => {
     to: email,
     subject,
     html,
-    text: `Your verification OTP is ${otp}. It expires in ${OTP_TTL_MINUTES} minutes.`
+    text: `Your Nivvaas Property enquiry verification OTP is ${otp}. It expires in ${OTP_TTL_MINUTES} minutes.`
   });
 };
 
