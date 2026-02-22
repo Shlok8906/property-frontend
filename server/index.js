@@ -40,6 +40,9 @@ const PROPERTY_CARD_SELECT = 'id,title,location,bhk,price,purpose,builder,posses
 const OTP_TTL_MINUTES = Number.parseInt(process.env.OTP_TTL_MINUTES || '10', 10);
 const OTP_VERIFY_TOKEN_TTL_MINUTES = Number.parseInt(process.env.OTP_VERIFY_TOKEN_TTL_MINUTES || '20', 10);
 const OTP_MAX_ATTEMPTS = Number.parseInt(process.env.OTP_MAX_ATTEMPTS || '5', 10);
+const SMTP_CONNECTION_TIMEOUT_MS = Number.parseInt(process.env.SMTP_CONNECTION_TIMEOUT_MS || '5000', 10);
+const SMTP_GREETING_TIMEOUT_MS = Number.parseInt(process.env.SMTP_GREETING_TIMEOUT_MS || '5000', 10);
+const SMTP_SOCKET_TIMEOUT_MS = Number.parseInt(process.env.SMTP_SOCKET_TIMEOUT_MS || '6000', 10);
 const emailOtpStore = new Map();
 const verifiedEmailTokenStore = new Map();
 
@@ -96,6 +99,9 @@ const getSmtpTransport = () => {
     port,
     family: 4,
     secure: port === 465,
+    connectionTimeout: SMTP_CONNECTION_TIMEOUT_MS,
+    greetingTimeout: SMTP_GREETING_TIMEOUT_MS,
+    socketTimeout: SMTP_SOCKET_TIMEOUT_MS,
     auth: {
       user,
       pass
@@ -134,6 +140,29 @@ const sendOtpEmail = async ({ email, otp, purpose }) => {
     html,
     text: `Your Nivvaas Property enquiry verification OTP is ${otp}. It expires in ${OTP_TTL_MINUTES} minutes.`
   });
+};
+
+const mapOtpDeliveryError = (error) => {
+  const code = String(error?.code || '').toUpperCase();
+  const message = String(error?.message || 'Failed to send OTP email.');
+
+  if (code === 'ETIMEDOUT' || message.toLowerCase().includes('timeout')) {
+    return 'Email service timeout. Check SMTP host/port and provider connectivity from your deployment (Render/Vercel).';
+  }
+
+  if (code === 'EAUTH' || message.toLowerCase().includes('invalid login')) {
+    return 'SMTP authentication failed. Verify SMTP_USER and SMTP_PASS (use Google App Password, not Gmail password).';
+  }
+
+  if (code === 'ENOTFOUND') {
+    return 'SMTP host not found. Verify SMTP_HOST value.';
+  }
+
+  if (code === 'ECONNECTION' || code === 'ECONNREFUSED' || code === 'ENETUNREACH') {
+    return 'Cannot reach SMTP server from deployment network. Try alternate SMTP provider/port (e.g., 465) and verify firewall/egress support.';
+  }
+
+  return message;
 };
 
 const consumeVerifiedEmailToken = ({ email, token, purpose }) => {
@@ -441,7 +470,7 @@ app.post('/api/verification/email/request', async (req, res) => {
       expiresInSeconds: OTP_TTL_MINUTES * 60
     });
   } catch (error) {
-    return res.status(500).json({ error: error.message || 'Failed to send OTP email.' });
+    return res.status(502).json({ error: mapOtpDeliveryError(error) });
   }
 });
 
