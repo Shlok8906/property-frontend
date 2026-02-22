@@ -13,8 +13,9 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -42,6 +43,20 @@ export default function Login() {
       setTimeout(() => {
         navigate(from, { replace: true });
       }, 100);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    const { error } = await signInWithGoogle();
+
+    if (error) {
+      toast({
+        title: 'Google Sign-In Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+      setIsGoogleLoading(false);
     }
   };
 
@@ -132,9 +147,29 @@ export default function Login() {
 
           <CardFooter className="flex flex-col gap-6 p-8">
             <Button
+              type="button"
+              variant="outline"
+              className="w-full h-14 text-sm font-bold border-border bg-card text-foreground hover:bg-muted rounded-2xl transition-all"
+              onClick={handleGoogleSignIn}
+              disabled={isGoogleLoading || isLoading}
+            >
+              {isGoogleLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Redirecting to Google...
+                </>
+              ) : (
+                <>
+                  <img src="/google-logo.svg" alt="Google" className="mr-2 h-5 w-5" />
+                  Continue with Google
+                </>
+              )}
+            </Button>
+
+            <Button
               type="submit"
               className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50"
-              disabled={isLoading}
+              disabled={isLoading || isGoogleLoading}
             >
               {isLoading ? (
                 <>

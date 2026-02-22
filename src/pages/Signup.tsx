@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -14,9 +14,28 @@ export default function Signup() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signUp } = useAuth();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const { signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const passwordChecks = useMemo(() => {
+    return {
+      minLength: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /\d/.test(password),
+      special: /[^A-Za-z0-9]/.test(password),
+    };
+  }, [password]);
+
+  const passwordScore = useMemo(
+    () => Object.values(passwordChecks).filter(Boolean).length,
+    [passwordChecks]
+  );
+
+  const passwordStrengthLabel =
+    passwordScore <= 2 ? 'Weak' : passwordScore === 3 ? 'Fair' : passwordScore === 4 ? 'Good' : 'Strong';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,10 +49,10 @@ export default function Signup() {
       return;
     }
 
-    if (password.length < 6) {
+    if (passwordScore < 4) {
       toast({
         title: 'Security Alert',
-        description: 'Password must be at least 6 characters.',
+        description: 'Use at least 8 characters with uppercase, lowercase, number, and special character.',
         variant: 'destructive',
       });
       return;
@@ -56,6 +75,20 @@ export default function Signup() {
         description: 'Your luxury journey begins now.',
       });
       navigate('/profile', { replace: true });
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    const { error } = await signInWithGoogle();
+
+    if (error) {
+      toast({
+        title: 'Google Sign-In Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+      setIsGoogleLoading(false);
     }
   };
 
@@ -131,6 +164,24 @@ export default function Signup() {
                     required
                   />
                 </div>
+                {password.length > 0 && (
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-center justify-between text-[10px] uppercase tracking-wider">
+                      <span className="text-muted-foreground">Password Strength</span>
+                      <span className={passwordScore <= 2 ? 'text-destructive font-bold' : 'text-primary font-bold'}>
+                        {passwordStrengthLabel}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-5 gap-1">
+                      {[1, 2, 3, 4, 5].map((level) => (
+                        <div
+                          key={level}
+                          className={`h-1 rounded-full ${passwordScore >= level ? (passwordScore <= 2 ? 'bg-destructive' : 'bg-primary') : 'bg-muted'}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword" className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Confirm</Label>
@@ -152,9 +203,29 @@ export default function Signup() {
           
           <CardFooter className="flex flex-col gap-6 px-10 pb-12 pt-4">
             <Button
+              type="button"
+              variant="outline"
+              className="w-full h-14 border-border text-foreground hover:bg-muted rounded-2xl font-bold transition-all"
+              onClick={handleGoogleSignIn}
+              disabled={isGoogleLoading || isLoading}
+            >
+              {isGoogleLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Redirecting to Google...
+                </>
+              ) : (
+                <>
+                  <img src="/google-logo.svg" alt="Google" className="mr-2 h-5 w-5" />
+                  Continue with Google
+                </>
+              )}
+            </Button>
+
+            <Button
               type="submit"
               className="w-full h-14 text-sm font-black uppercase tracking-[0.2em] bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-[0.98]"
-              disabled={isLoading}
+              disabled={isLoading || isGoogleLoading}
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />

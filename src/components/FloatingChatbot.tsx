@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { propertyAPI, Property } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 
-type ChatStep = 'area' | 'type' | 'furnishing' | 'suitableFor' | 'budget' | 'possession' | 'done';
+type ChatStep = 'area' | 'transaction' | 'category' | 'type' | 'budget' | 'furnishing' | 'suitableFor' | 'possession' | 'done';
 
 type ChatMessage = {
   id: string;
@@ -17,6 +17,8 @@ type ChatMessage = {
 
 type ChatSelections = {
   area: string;
+  transaction: string;
+  category: string;
   propertyType: string;
   furnishing: string;
   suitableFor: string;
@@ -24,13 +26,21 @@ type ChatSelections = {
   possession: string;
 };
 
-const propertyTypeOptions = ['Flat', 'Bungalow', 'PG'];
+const transactionOptions = ['Rent', 'Resale', 'Lease'];
+const categoryOptions = ['Residential', 'Commercial'];
+const residentialTypeOptions = ['Flat', 'Bungalow', 'PG'];
+const commercialTypeOptions = ['Office', 'Shop', 'Showroom'];
 const furnishingOptions = ['Furnished', 'Unfurnished'];
-const suitableForOptions = ['Family', 'Bachelor'];
+const suitableForOptions = ['Family', 'Student', 'Working Bachelors'];
 const budgetOptions = ['15–20L', '20–25L', '25–30L', '30L+'];
+const residentialRentBudgetOptions = ['10-15k', '15-20k', '20-30k', '30k+'];
 const possessionOptions = ['Immediate', '1 Month', '2 Months'];
 
 const budgetRangeMap: Record<string, { min: number; max: number }> = {
+  '10-15k': { min: 10000, max: 15000 },
+  '15-20k': { min: 15000, max: 20000 },
+  '20-30k': { min: 20000, max: 30000 },
+  '30k+': { min: 30000, max: Number.MAX_SAFE_INTEGER },
   '15–20L': { min: 1500000, max: 2000000 },
   '20–25L': { min: 2000000, max: 2500000 },
   '25–30L': { min: 2500000, max: 3000000 },
@@ -69,6 +79,8 @@ export function FloatingChatbot() {
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [selections, setSelections] = useState<ChatSelections>({
     area: '',
+    transaction: '',
+    category: '',
     propertyType: '',
     furnishing: '',
     suitableFor: '',
@@ -79,13 +91,25 @@ export function FloatingChatbot() {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const currentOptions = useMemo(() => {
-    if (step === 'type') return propertyTypeOptions;
+    if (step === 'transaction') return transactionOptions;
+    if (step === 'category') return categoryOptions;
+    if (step === 'type') {
+      return normalize(selections.category) === 'commercial'
+        ? commercialTypeOptions
+        : residentialTypeOptions;
+    }
+    if (step === 'budget') {
+      const isResidentialRent =
+        normalize(selections.transaction) === 'rent' &&
+        normalize(selections.category) === 'residential';
+
+      return isResidentialRent ? residentialRentBudgetOptions : budgetOptions;
+    }
     if (step === 'furnishing') return furnishingOptions;
     if (step === 'suitableFor') return suitableForOptions;
-    if (step === 'budget') return budgetOptions;
     if (step === 'possession') return possessionOptions;
     return [];
-  }, [step]);
+  }, [step, selections.category, selections.transaction]);
 
   const areaSuggestions = useMemo(() => {
     const query = normalize(areaInput);
@@ -152,8 +176,32 @@ export function FloatingChatbot() {
   };
 
   const moveToNextStep = (selectedValue: string) => {
+    if (step === 'transaction') {
+      setSelections((prev) => ({ ...prev, transaction: selectedValue }));
+      addUserMessage(selectedValue);
+      addBotMessage('Property category?');
+      setStep('category');
+      return;
+    }
+
+    if (step === 'category') {
+      setSelections((prev) => ({ ...prev, category: selectedValue }));
+      addUserMessage(selectedValue);
+      addBotMessage('Select property type');
+      setStep('type');
+      return;
+    }
+
     if (step === 'type') {
       setSelections((prev) => ({ ...prev, propertyType: selectedValue }));
+      addUserMessage(selectedValue);
+      addBotMessage('Select your budget range');
+      setStep('budget');
+      return;
+    }
+
+    if (step === 'budget') {
+      setSelections((prev) => ({ ...prev, budget: selectedValue }));
       addUserMessage(selectedValue);
       addBotMessage('Furnishing preference?');
       setStep('furnishing');
@@ -163,21 +211,13 @@ export function FloatingChatbot() {
     if (step === 'furnishing') {
       setSelections((prev) => ({ ...prev, furnishing: selectedValue }));
       addUserMessage(selectedValue);
-      addBotMessage('Who is this property for?');
+      addBotMessage('Who is this property suitable for?');
       setStep('suitableFor');
       return;
     }
 
     if (step === 'suitableFor') {
       setSelections((prev) => ({ ...prev, suitableFor: selectedValue }));
-      addUserMessage(selectedValue);
-      addBotMessage('Select your budget range');
-      setStep('budget');
-      return;
-    }
-
-    if (step === 'budget') {
-      setSelections((prev) => ({ ...prev, budget: selectedValue }));
       addUserMessage(selectedValue);
       addBotMessage('When do you need possession?');
       setStep('possession');
@@ -209,16 +249,16 @@ export function FloatingChatbot() {
       setSelections((prev) => ({ ...prev, area: matchedArea }));
       addUserMessage(matchedArea);
       setAreaInput('');
-      addBotMessage('What are you looking for?');
-      setStep('type');
+      addBotMessage('Choose transaction type');
+      setStep('transaction');
       return;
     }
 
     setSelections((prev) => ({ ...prev, area: cleaned }));
     addUserMessage(cleaned);
     setAreaInput('');
-    addBotMessage('What are you looking for?');
-    setStep('type');
+    addBotMessage('Choose transaction type');
+    setStep('transaction');
   };
 
   const handleAreaInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -255,6 +295,8 @@ export function FloatingChatbot() {
   const filterRecommendations = (items: Property[], currentSelections: ChatSelections) => {
     const budgetRange = budgetRangeMap[currentSelections.budget];
     const area = normalize(currentSelections.area);
+    const selectedTransaction = normalize(currentSelections.transaction);
+    const selectedCategory = normalize(currentSelections.category);
     const selectedType = normalize(currentSelections.propertyType);
     const selectedFurnishing = normalize(currentSelections.furnishing);
     const selectedSuitableFor = normalize(currentSelections.suitableFor);
@@ -264,6 +306,21 @@ export function FloatingChatbot() {
       const text = toSearchableText(property);
       const areaMatch = !area || normalize(property.location).includes(area) || normalize(property.title).includes(area);
       if (!areaMatch) return false;
+
+      const purpose = normalize(property.purpose);
+      if (selectedTransaction === 'rent' && !includesAny(purpose, ['rent'])) return false;
+      if (selectedTransaction === 'lease' && !includesAny(purpose, ['lease'])) return false;
+      if (selectedTransaction === 'resale' && !includesAny(purpose, ['sell', 'sale', 'resale'])) return false;
+
+      if (selectedCategory === 'residential') {
+        const categoryMatch = includesAny(text, ['residential', 'flat', 'apartment', 'villa', 'house', 'bungalow', 'pg']);
+        if (!categoryMatch) return false;
+      }
+
+      if (selectedCategory === 'commercial') {
+        const categoryMatch = includesAny(text, ['commercial', 'office', 'shop', 'showroom']);
+        if (!categoryMatch) return false;
+      }
 
       const price = Number(property.price || 0);
       if (!budgetRange || price < budgetRange.min || price > budgetRange.max) return false;
@@ -280,6 +337,21 @@ export function FloatingChatbot() {
 
       if (selectedType === 'pg') {
         const typeMatch = includesAny(text, ['pg', 'paying guest', 'hostel', 'coliving']);
+        if (!typeMatch) return false;
+      }
+
+      if (selectedType === 'office') {
+        const typeMatch = includesAny(text, ['office']);
+        if (!typeMatch) return false;
+      }
+
+      if (selectedType === 'shop') {
+        const typeMatch = includesAny(text, ['shop']);
+        if (!typeMatch) return false;
+      }
+
+      if (selectedType === 'showroom') {
+        const typeMatch = includesAny(text, ['showroom']);
         if (!typeMatch) return false;
       }
 
@@ -300,6 +372,16 @@ export function FloatingChatbot() {
 
       if (selectedSuitableFor === 'bachelor') {
         const suitableForMatch = includesAny(text, ['bachelor', 'bachelors']);
+        if (!suitableForMatch) return false;
+      }
+
+      if (selectedSuitableFor === 'student') {
+        const suitableForMatch = includesAny(text, ['student', 'students']);
+        if (!suitableForMatch) return false;
+      }
+
+      if (selectedSuitableFor === 'working bachelors') {
+        const suitableForMatch = includesAny(text, ['working bachelor', 'working bachelors', 'bachelor', 'bachelors']);
         if (!suitableForMatch) return false;
       }
 
@@ -330,12 +412,28 @@ export function FloatingChatbot() {
       const areaMatch = !area || normalize(property.location).includes(area) || normalize(property.title).includes(area);
       if (!areaMatch) return false;
 
+      const purpose = normalize(property.purpose);
+      if (selectedTransaction === 'rent' && !includesAny(purpose, ['rent'])) return false;
+      if (selectedTransaction === 'lease' && !includesAny(purpose, ['lease'])) return false;
+      if (selectedTransaction === 'resale' && !includesAny(purpose, ['sell', 'sale', 'resale'])) return false;
+
+      if (selectedCategory === 'residential' && !includesAny(text, ['residential', 'flat', 'apartment', 'villa', 'house', 'bungalow', 'pg'])) {
+        return false;
+      }
+
+      if (selectedCategory === 'commercial' && !includesAny(text, ['commercial', 'office', 'shop', 'showroom'])) {
+        return false;
+      }
+
       const price = Number(property.price || 0);
       if (!budgetRange || price < budgetRange.min || price > budgetRange.max) return false;
 
       if (selectedType === 'flat') return includesAny(text, ['flat', 'apartment']);
       if (selectedType === 'bungalow') return includesAny(text, ['bungalow', 'villa', 'independent', 'house']);
       if (selectedType === 'pg') return includesAny(text, ['pg', 'paying guest', 'hostel', 'coliving']);
+      if (selectedType === 'office') return includesAny(text, ['office']);
+      if (selectedType === 'shop') return includesAny(text, ['shop']);
+      if (selectedType === 'showroom') return includesAny(text, ['showroom']);
       return true;
     });
 
@@ -369,6 +467,8 @@ export function FloatingChatbot() {
     setRecommendations([]);
     setSelections({
       area: '',
+      transaction: '',
+      category: '',
       propertyType: '',
       furnishing: '',
       suitableFor: '',

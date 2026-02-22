@@ -100,12 +100,25 @@ export interface Enquiry {
   propertyId?: string;
   propertyTitle?: string;
   name: string;
-  email?: string;
+  email: string;
   phone: string;
   message?: string;
+  emailVerificationToken?: string;
   status: 'new' | 'contacted' | 'closed';
   created_at?: string;
   updated_at?: string;
+}
+
+export interface EmailOtpRequestResult {
+  success: boolean;
+  requestId: string;
+  expiresInSeconds: number;
+}
+
+export interface EmailOtpVerifyResult {
+  success: boolean;
+  verificationToken: string;
+  expiresInSeconds: number;
 }
 
 export interface DashboardStats {
@@ -298,6 +311,38 @@ export const enquiryAPI = {
     });
     if (!response.ok) throw new Error('Failed to delete enquiry');
     return response.json();
+  },
+};
+
+export const emailVerificationAPI = {
+  async requestOtp(email: string, purpose: 'enquiry' | 'contact'): Promise<EmailOtpRequestResult> {
+    const response = await fetchWithApiFallback('/verification/email/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, purpose }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.error || 'Failed to send OTP');
+    }
+
+    return data;
+  },
+
+  async verifyOtp(email: string, requestId: string, otp: string): Promise<EmailOtpVerifyResult> {
+    const response = await fetchWithApiFallback('/verification/email/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, requestId, otp }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.error || 'Failed to verify OTP');
+    }
+
+    return data;
   },
 };
 

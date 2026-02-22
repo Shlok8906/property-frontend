@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
+import nodemailer from 'nodemailer';
 import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
@@ -29,6 +31,129 @@ const TABLES = {
 
 const PROPERTY_FULL_SELECT = '*';
 const PROPERTY_CARD_SELECT = 'id,title,location,bhk,price,purpose,builder,possession,project_name,image_url,images,status,created_at,updated_at';
+const OTP_TTL_MINUTES = Number.parseInt(process.env.OTP_TTL_MINUTES || '10', 10);
+const OTP_VERIFY_TOKEN_TTL_MINUTES = Number.parseInt(process.env.OTP_VERIFY_TOKEN_TTL_MINUTES || '20', 10);
+const OTP_MAX_ATTEMPTS = Number.parseInt(process.env.OTP_MAX_ATTEMPTS || '5', 10);
+const emailOtpStore = new Map();
+const verifiedEmailTokenStore = new Map();
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
+
+const isValidEmail = (value) => EMAIL_REGEX.test(normalizeEmail(value));
+
+const hashOtp = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
+
+const generateOtp = () => String(crypto.randomInt(100000, 1000000));
+
+const generateId = () => crypto.randomUUID();
+
+const nowMs = () => Date.now();
+
+const purgeExpiredOtpRecords = () => {
+  const current = nowMs();
+
+  for (const [key, record] of emailOtpStore.entries()) {
+    if (record.expiresAt <= current) {
+      emailOtpStore.delete(key);
+    }
+  }
+
+  for (const [key, record] of verifiedEmailTokenStore.entries()) {
+    if (record.expiresAt <= current || record.consumed) {
+      verifiedEmailTokenStore.delete(key);
+    }
+  }
+};
+
+setInterval(purgeExpiredOtpRecords, 60_000).unref();
+
+let smtpTransport = null;
+
+const getSmtpTransport = () => {
+  if (smtpTransport) {
+    return smtpTransport;
+  }
+
+  const host = process.env.SMTP_HOST;
+  const port = Number.parseInt(process.env.SMTP_PORT || '587', 10);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  if (!host || !user || !pass) {
+    return null;
+  }
+
+  smtpTransport = nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: {
+      user,
+      pass
+    }
+  });
+
+  return smtpTransport;
+};
+
+const sendOtpEmail = async ({ email, otp, purpose }) => {
+  const transport = getSmtpTransport();
+  const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER;
+
+  if (!transport || !fromAddress) {
+    throw new Error('Email OTP is not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS and SMTP_FROM.');
+  }
+
+  const subject = purpose === 'contact'
+    ? 'Your Contact Verification OTP'
+    : 'Your Enquiry Verification OTP';
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111827;">
+      <h2 style="margin-bottom: 8px;">Email verification code</h2>
+      <p style="margin-top: 0;">Use this one-time password to verify your email before submitting your request.</p>
+      <div style="font-size: 32px; letter-spacing: 6px; font-weight: 700; margin: 20px 0;">${otp}</div>
+      <p>This OTP expires in ${OTP_TTL_MINUTES} minutes.</p>
+      <p>If you did not request this code, you can ignore this email.</p>
+    </div>
+  `;
+
+  await transport.sendMail({
+    from: fromAddress,
+    to: email,
+    subject,
+    html,
+    text: `Your verification OTP is ${otp}. It expires in ${OTP_TTL_MINUTES} minutes.`
+  });
+};
+
+const consumeVerifiedEmailToken = ({ email, token, purpose }) => {
+  const normalizedEmail = normalizeEmail(email);
+  const record = verifiedEmailTokenStore.get(token);
+
+  if (!record) {
+    return { valid: false, message: 'Invalid verification token.' };
+  }
+
+  if (record.consumed) {
+    return { valid: false, message: 'Verification token has already been used.' };
+  }
+
+  if (record.expiresAt <= nowMs()) {
+    verifiedEmailTokenStore.delete(token);
+    return { valid: false, message: 'Verification token has expired. Please verify again.' };
+  }
+
+  if (record.email !== normalizedEmail || record.purpose !== purpose) {
+    return { valid: false, message: 'Verification token does not match this request.' };
+  }
+
+  record.consumed = true;
+  verifiedEmailTokenStore.set(token, record);
+  return { valid: true };
+};
 
 const toBoundedInt = (value, fallback, min, max) => {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -278,6 +403,95 @@ app.use(cors({
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+app.post('/api/verification/email/request', async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body?.email);
+    const purpose = req.body?.purpose === 'contact' ? 'contact' : 'enquiry';
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'A valid email is required.' });
+    }
+
+    const otp = generateOtp();
+    const requestId = generateId();
+    const expiresAt = nowMs() + OTP_TTL_MINUTES * 60_000;
+
+    emailOtpStore.set(requestId, {
+      email,
+      purpose,
+      otpHash: hashOtp(otp),
+      attempts: 0,
+      maxAttempts: OTP_MAX_ATTEMPTS,
+      expiresAt
+    });
+
+    await sendOtpEmail({ email, otp, purpose });
+
+    return res.json({
+      success: true,
+      requestId,
+      expiresInSeconds: OTP_TTL_MINUTES * 60
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Failed to send OTP email.' });
+  }
+});
+
+app.post('/api/verification/email/verify', async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body?.email);
+    const requestId = String(req.body?.requestId || '').trim();
+    const otp = String(req.body?.otp || '').trim();
+
+    if (!email || !requestId || !otp) {
+      return res.status(400).json({ error: 'email, requestId and otp are required.' });
+    }
+
+    const record = emailOtpStore.get(requestId);
+    if (!record) {
+      return res.status(400).json({ error: 'Invalid OTP request. Please request a new code.' });
+    }
+
+    if (record.expiresAt <= nowMs()) {
+      emailOtpStore.delete(requestId);
+      return res.status(400).json({ error: 'OTP expired. Please request a new code.' });
+    }
+
+    if (record.email !== email) {
+      return res.status(400).json({ error: 'Email does not match OTP request.' });
+    }
+
+    if (record.attempts >= record.maxAttempts) {
+      emailOtpStore.delete(requestId);
+      return res.status(429).json({ error: 'Too many attempts. Please request a new OTP.' });
+    }
+
+    const isMatch = hashOtp(otp) === record.otpHash;
+    if (!isMatch) {
+      record.attempts += 1;
+      emailOtpStore.set(requestId, record);
+      return res.status(400).json({ error: 'Invalid OTP code.' });
+    }
+
+    emailOtpStore.delete(requestId);
+    const verificationToken = generateId();
+    verifiedEmailTokenStore.set(verificationToken, {
+      email,
+      purpose: record.purpose,
+      consumed: false,
+      expiresAt: nowMs() + OTP_VERIFY_TOKEN_TTL_MINUTES * 60_000
+    });
+
+    return res.json({
+      success: true,
+      verificationToken,
+      expiresInSeconds: OTP_VERIFY_TOKEN_TTL_MINUTES * 60
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'OTP verification failed.' });
+  }
+});
 
 // API Routes
 
@@ -579,8 +793,25 @@ app.get('/api/enquiries', async (req, res) => {
 // Create enquiry
 app.post('/api/enquiries', async (req, res) => {
   try {
+    const email = normalizeEmail(req.body?.email);
+    const verificationToken = String(req.body?.emailVerificationToken || '').trim();
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'A valid email is required for enquiry submission.' });
+    }
+
+    const verification = consumeVerifiedEmailToken({
+      email,
+      token: verificationToken,
+      purpose: 'enquiry'
+    });
+
+    if (!verification.valid) {
+      return res.status(400).json({ error: verification.message });
+    }
+
     const payload = {
-      ...mapEnquiryToDb(req.body),
+      ...mapEnquiryToDb({ ...req.body, email }),
       status: req.body.status || 'new'
     };
 
@@ -749,7 +980,23 @@ app.get('/api/contact-messages', async (req, res) => {
 // Create contact message
 app.post('/api/contact', async (req, res) => {
   try {
-    const { name, phone, email, message } = req.body;
+    const { name, phone, message } = req.body;
+    const email = normalizeEmail(req.body?.email);
+    const verificationToken = String(req.body?.emailVerificationToken || '').trim();
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'A valid email is required for contact submission.' });
+    }
+
+    const verification = consumeVerifiedEmailToken({
+      email,
+      token: verificationToken,
+      purpose: 'contact'
+    });
+
+    if (!verification.valid) {
+      return res.status(400).json({ error: verification.message });
+    }
 
     const { data, error } = await supabase
       .from(TABLES.contactMessages)

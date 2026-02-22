@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { propertyAPI, enquiryAPI, Property } from '@/lib/api';
+import { propertyAPI, enquiryAPI, emailVerificationAPI, Property } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice } from '@/lib/utils';
 import { 
@@ -70,6 +70,12 @@ export default function PropertyDetail() {
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpRequestId, setOtpRequestId] = useState('');
+  const [otpVerificationToken, setOtpVerificationToken] = useState('');
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
   
   // Image gallery state
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -82,6 +88,13 @@ export default function PropertyDetail() {
     phone: '',
     message: ''
   });
+
+  const resetOtpState = () => {
+    setOtpCode('');
+    setOtpRequestId('');
+    setOtpVerificationToken('');
+    setOtpVerified(false);
+  };
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -106,13 +119,85 @@ export default function PropertyDetail() {
     fetchProperty();
   }, [id, toast]);
 
+  const handleRequestOtp = async () => {
+    if (!formData.email) {
+      toast({
+        title: 'Email Required',
+        description: 'Please enter your email to receive OTP.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setOtpSending(true);
+    try {
+      const result = await emailVerificationAPI.requestOtp(formData.email, 'enquiry');
+      setOtpRequestId(result.requestId);
+      setOtpVerificationToken('');
+      setOtpVerified(false);
+
+      toast({
+        title: 'OTP Sent',
+        description: 'Please check your email for the code.'
+      });
+    } catch (error) {
+      toast({
+        title: 'OTP Failed',
+        description: error instanceof Error ? error.message : 'Unable to send OTP right now.',
+        variant: 'destructive'
+      });
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpRequestId || otpCode.length < 6) {
+      toast({
+        title: 'Verification Required',
+        description: 'Request OTP and enter a valid 6-digit code.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setOtpVerifying(true);
+    try {
+      const result = await emailVerificationAPI.verifyOtp(formData.email, otpRequestId, otpCode);
+      setOtpVerificationToken(result.verificationToken);
+      setOtpVerified(true);
+
+      toast({
+        title: 'Email Verified',
+        description: 'You can now submit your enquiry.'
+      });
+    } catch (error) {
+      toast({
+        title: 'Invalid OTP',
+        description: error instanceof Error ? error.message : 'OTP verification failed.',
+        variant: 'destructive'
+      });
+    } finally {
+      setOtpVerifying(false);
+    }
+  };
+
   const handleSubmitEnquiry = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.phone) {
+    if (!formData.name || !formData.phone || !formData.email) {
       toast({
         title: 'Missing Information',
-        description: 'Please provide your name and phone number',
+        description: 'Please provide your name, email and phone number',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!otpVerified || !otpVerificationToken) {
+      toast({
+        title: 'Email Not Verified',
+        description: 'Please verify your email with OTP before sending enquiry.',
         variant: 'destructive'
       });
       return;
@@ -128,7 +213,8 @@ export default function PropertyDetail() {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
-        message: formData.message
+        message: formData.message,
+        emailVerificationToken: otpVerificationToken
       });
 
       toast({
@@ -143,6 +229,7 @@ export default function PropertyDetail() {
         phone: '',
         message: ''
       });
+      resetOtpState();
     } catch (error) {
       console.error('Error submitting enquiry:', error);
       toast({
@@ -520,14 +607,45 @@ export default function PropertyDetail() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">Email *</Label>
                     <Input
                       id="email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      onChange={(e) => {
+                        setFormData(prev => ({ ...prev, email: e.target.value }));
+                        resetOtpState();
+                      }}
                       placeholder="your@email.com"
+                      required
                     />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleRequestOtp}
+                        disabled={otpSending || submitting || !formData.email}
+                        className="sm:col-span-1"
+                      >
+                        {otpSending ? 'Sending...' : otpRequestId ? 'Resend OTP' : 'Send OTP'}
+                      </Button>
+                      <Input
+                        placeholder="Enter OTP"
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        className="sm:col-span-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleVerifyOtp}
+                        disabled={otpVerifying || submitting || !otpRequestId || otpCode.length < 6 || otpVerified}
+                        className="sm:col-span-1"
+                      >
+                        {otpVerified ? 'Verified' : otpVerifying ? 'Verifying...' : 'Verify OTP'}
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -607,6 +725,3 @@ export default function PropertyDetail() {
     </Layout>
   );
 }
-<div style={{ background: 'red', color: 'white', padding: '20px' }}>
-  DEPLOY CHECK – IF YOU SEE THIS, DEPLOY IS WORKING
-</div>

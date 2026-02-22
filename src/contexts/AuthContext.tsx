@@ -12,6 +12,7 @@ interface AuthContextType {
   isLoading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -203,6 +204,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/profile`,
+        },
+      });
+
+      if (error) {
+        const message = error.message.toLowerCase();
+        if (message.includes('unsupported provider') || message.includes('provider is not enabled')) {
+          return {
+            error: new Error('Google sign-in is not enabled in Supabase. Enable Google provider in Authentication > Providers and add your app URL to redirect settings.'),
+          };
+        }
+      }
+
+      return { error };
+    } catch (err) {
+      return { error: toAuthError(err, 'Google sign-in failed') };
+    }
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -219,6 +244,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         signUp,
         signIn,
+        signInWithGoogle,
         signOut,
       }}
     >

@@ -205,7 +205,7 @@ export default function Index() {
   return (
     <Layout>
       {/* Hero Section - Upgraded with Depth and Grain */}
-      <section className="relative min-h-[85vh] flex items-center justify-center overflow-x-hidden overflow-y-visible bg-background">
+      <section className="relative min-h-[85vh] flex items-center justify-center overflow-x-clip overflow-y-visible bg-background">
         {/* Abstract Background Orbs */}
         <div className="absolute inset-0">
           <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
@@ -214,7 +214,7 @@ export default function Index() {
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
         </div>
 
-        <div className="container relative z-10 py-12 sm:py-16 md:py-20 lg:py-32">
+        <div className="container relative z-30 py-12 sm:py-16 md:py-20 lg:py-32">
           <div className="max-w-5xl mx-auto text-center space-y-6 sm:space-y-8 lg:space-y-10 px-4 sm:px-6">
             <div className="space-y-4 sm:space-y-6">
               {/* Badge - responsive sizing */}
@@ -256,7 +256,7 @@ export default function Index() {
                     className="bg-card border-border h-12 sm:h-16 pl-10 sm:pl-12 text-sm sm:text-base lg:text-lg rounded-xl sm:rounded-2xl focus:ring-primary/50 text-foreground placeholder:text-muted-foreground transition-all w-full"
                   />
                   {showRecommendations && (
-                    <div className="absolute left-0 right-0 mt-2 z-30 rounded-xl border border-border bg-card shadow-2xl overflow-hidden" style={{maxHeight: '15rem', overflowY: 'auto'}}>
+                    <div className="absolute left-0 right-0 mt-2 z-50 rounded-xl border border-border bg-card shadow-2xl overflow-hidden" style={{maxHeight: '15rem', overflowY: 'auto'}}>
                       {filteredRecommendations.map((area) => (
                         <button
                           key={area}

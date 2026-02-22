@@ -5,12 +5,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
+import { emailVerificationAPI } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { Phone, Mail, MapPin, Send } from 'lucide-react';
 
 export default function Contact() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpRequestId, setOtpRequestId] = useState('');
+  const [otpVerificationToken, setOtpVerificationToken] = useState('');
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -18,8 +25,88 @@ export default function Contact() {
     message: '',
   });
 
+  const resetOtpState = () => {
+    setOtpCode('');
+    setOtpRequestId('');
+    setOtpVerificationToken('');
+    setOtpVerified(false);
+  };
+
+  const handleRequestOtp = async () => {
+    if (!formData.email) {
+      toast({
+        title: 'Email Required',
+        description: 'Please enter your email to receive OTP.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setOtpSending(true);
+    try {
+      const result = await emailVerificationAPI.requestOtp(formData.email, 'contact');
+      setOtpRequestId(result.requestId);
+      setOtpVerified(false);
+      setOtpVerificationToken('');
+
+      toast({
+        title: 'OTP Sent',
+        description: 'Check your email for the verification code.',
+      });
+    } catch (error) {
+      toast({
+        title: 'OTP Failed',
+        description: error instanceof Error ? error.message : 'Unable to send OTP.',
+        variant: 'destructive',
+      });
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpRequestId || !otpCode) {
+      toast({
+        title: 'Verification Required',
+        description: 'Request OTP and enter the code first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setOtpVerifying(true);
+    try {
+      const result = await emailVerificationAPI.verifyOtp(formData.email, otpRequestId, otpCode);
+      setOtpVerificationToken(result.verificationToken);
+      setOtpVerified(true);
+
+      toast({
+        title: 'Email Verified',
+        description: 'You can now submit your inquiry.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Invalid OTP',
+        description: error instanceof Error ? error.message : 'OTP verification failed.',
+        variant: 'destructive',
+      });
+    } finally {
+      setOtpVerifying(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!otpVerified || !otpVerificationToken) {
+      toast({
+        title: 'Email Not Verified',
+        description: 'Please verify your email with OTP before submitting.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -28,11 +115,16 @@ export default function Contact() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          emailVerificationToken: otpVerificationToken,
+        }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        throw new Error(data?.error || 'Failed to send message');
       }
 
       toast({
@@ -47,10 +139,11 @@ export default function Contact() {
         email: '',
         message: '',
       });
+      resetOtpState();
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to send message. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to send message. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -192,10 +285,42 @@ export default function Contact() {
                     type="email"
                     placeholder="Your Email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value });
+                      resetOtpState();
+                    }}
                     required
                     className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary/50"
                   />
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={otpSending || !formData.email || loading}
+                      onClick={handleRequestOtp}
+                      className="md:col-span-1"
+                    >
+                      {otpSending ? 'Sending...' : otpRequestId ? 'Resend OTP' : 'Send OTP'}
+                    </Button>
+
+                    <Input
+                      placeholder="Enter OTP"
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      className="md:col-span-1 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary/50"
+                    />
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={otpVerifying || !otpRequestId || otpCode.length < 6 || loading || otpVerified}
+                      onClick={handleVerifyOtp}
+                      className="md:col-span-1"
+                    >
+                      {otpVerified ? 'Verified' : otpVerifying ? 'Verifying...' : 'Verify OTP'}
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
