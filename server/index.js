@@ -40,6 +40,9 @@ const PROPERTY_CARD_SELECT = 'id,title,location,bhk,price,purpose,builder,posses
 const OTP_TTL_MINUTES = Number.parseInt(process.env.OTP_TTL_MINUTES || '10', 10);
 const OTP_VERIFY_TOKEN_TTL_MINUTES = Number.parseInt(process.env.OTP_VERIFY_TOKEN_TTL_MINUTES || '20', 10);
 const OTP_MAX_ATTEMPTS = Number.parseInt(process.env.OTP_MAX_ATTEMPTS || '5', 10);
+const DEFAULT_N8N_OTP_WEBHOOK_URL = 'http://localhost:5678/webhook-test/95c69df4-98d1-4966-aac4-ceb0ff344edb';
+const N8N_OTP_WEBHOOK_URL = String(process.env.N8N_OTP_WEBHOOK_URL || DEFAULT_N8N_OTP_WEBHOOK_URL).trim();
+const N8N_OTP_WEBHOOK_SECRET = String(process.env.N8N_OTP_WEBHOOK_SECRET || '').trim();
 const SMTP_CONNECTION_TIMEOUT_MS = Number.parseInt(process.env.SMTP_CONNECTION_TIMEOUT_MS || '5000', 10);
 const SMTP_GREETING_TIMEOUT_MS = Number.parseInt(process.env.SMTP_GREETING_TIMEOUT_MS || '5000', 10);
 const SMTP_SOCKET_TIMEOUT_MS = Number.parseInt(process.env.SMTP_SOCKET_TIMEOUT_MS || '6000', 10);
@@ -123,18 +126,12 @@ const getSmtpTransport = () => {
 };
 
 const sendOtpEmail = async ({ email, otp, purpose }) => {
-  const transport = getSmtpTransport();
-  const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER;
-
-  if (!transport || !fromAddress) {
-    throw new Error('Email OTP is not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS and SMTP_FROM.');
-  }
-
   const subject = purpose === 'contact'
     ? 'Your Contact Verification OTP'
     : 'Your Enquiry Verification OTP';
 
-  const html = `
+  const textBody = `Your verification OTP is ${otp}. It expires in ${OTP_TTL_MINUTES} minutes.`;
+  const htmlBody = `
     <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111827;">
       <h2 style="margin-bottom: 8px;">Email verification code</h2>
       <p style="margin-top: 0;">Use this one-time password to verify your email before submitting your request.</p>
@@ -144,12 +141,58 @@ const sendOtpEmail = async ({ email, otp, purpose }) => {
     </div>
   `;
 
+  if (N8N_OTP_WEBHOOK_URL) {
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+
+    if (N8N_OTP_WEBHOOK_SECRET) {
+      headers['x-webhook-secret'] = N8N_OTP_WEBHOOK_SECRET;
+    }
+
+    const response = await fetch(N8N_OTP_WEBHOOK_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        email,
+        otp,
+        code: otp,
+        otpCode: otp,
+        verificationCode: otp,
+        purpose,
+        subject,
+        expiresInMinutes: OTP_TTL_MINUTES,
+        text: textBody,
+        html: htmlBody,
+        message: textBody
+      })
+    });
+
+    if (!response.ok) {
+      let detail = '';
+      try {
+        detail = await response.text();
+      } catch {
+      }
+      throw new Error(`n8n webhook failed (${response.status})${detail ? `: ${detail.slice(0, 200)}` : ''}`);
+    }
+
+    return;
+  }
+
+  const transport = getSmtpTransport();
+  const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER;
+
+  if (!transport || !fromAddress) {
+    throw new Error('Email OTP is not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS and SMTP_FROM.');
+  }
+
   await transport.sendMail({
     from: fromAddress,
     to: email,
     subject,
-    html,
-    text: `Your Nivvaas Property enquiry verification OTP is ${otp}. It expires in ${OTP_TTL_MINUTES} minutes.`
+    html: htmlBody,
+    text: textBody
   });
 };
 
@@ -470,6 +513,7 @@ app.post('/api/verification/email/request', async (req, res) => {
       otpHash: hashOtp(otp),
       attempts: 0,
       maxAttempts: OTP_MAX_ATTEMPTS,
+      createdAt: nowMs(),
       expiresAt
     });
 
@@ -490,38 +534,68 @@ app.post('/api/verification/email/verify', async (req, res) => {
     const email = normalizeEmail(req.body?.email);
     const requestId = String(req.body?.requestId || '').trim();
     const otp = String(req.body?.otp || '').trim();
+    const normalizedOtp = otp.replace(/\D/g, '').slice(0, 6);
 
-    if (!email || !requestId || !otp) {
+    if (!email || !requestId || !normalizedOtp) {
       return res.status(400).json({ error: 'email, requestId and otp are required.' });
     }
 
-    const record = emailOtpStore.get(requestId);
+    purgeExpiredOtpRecords();
+
+    let matchedRequestId = requestId;
+    let record = emailOtpStore.get(matchedRequestId);
+    const requestedRecordExists = Boolean(record);
+
+    if (record && record.email !== email) {
+      return res.status(400).json({ error: 'Email does not match OTP request.' });
+    }
+
+    if (record && record.expiresAt <= nowMs()) {
+      emailOtpStore.delete(matchedRequestId);
+      record = undefined;
+    }
+
+    if (!record || hashOtp(normalizedOtp) !== record.otpHash) {
+      let fallbackRecord = null;
+      let fallbackRequestId = '';
+
+      for (const [key, candidate] of emailOtpStore.entries()) {
+        if (candidate.email !== email) continue;
+        if (candidate.expiresAt <= nowMs()) continue;
+        if (candidate.attempts >= candidate.maxAttempts) continue;
+        if (hashOtp(normalizedOtp) !== candidate.otpHash) continue;
+
+        if (!fallbackRecord || (candidate.createdAt || 0) > (fallbackRecord.createdAt || 0)) {
+          fallbackRecord = candidate;
+          fallbackRequestId = key;
+        }
+      }
+
+      if (fallbackRecord) {
+        record = fallbackRecord;
+        matchedRequestId = fallbackRequestId;
+      }
+    }
+
     if (!record) {
       return res.status(400).json({ error: 'Invalid OTP request. Please request a new code.' });
     }
 
-    if (record.expiresAt <= nowMs()) {
-      emailOtpStore.delete(requestId);
-      return res.status(400).json({ error: 'OTP expired. Please request a new code.' });
-    }
-
-    if (record.email !== email) {
-      return res.status(400).json({ error: 'Email does not match OTP request.' });
-    }
-
     if (record.attempts >= record.maxAttempts) {
-      emailOtpStore.delete(requestId);
+      emailOtpStore.delete(matchedRequestId);
       return res.status(429).json({ error: 'Too many attempts. Please request a new OTP.' });
     }
 
-    const isMatch = hashOtp(otp) === record.otpHash;
+    const isMatch = hashOtp(normalizedOtp) === record.otpHash;
     if (!isMatch) {
       record.attempts += 1;
-      emailOtpStore.set(requestId, record);
+      if (requestedRecordExists) {
+        emailOtpStore.set(matchedRequestId, record);
+      }
       return res.status(400).json({ error: 'Invalid OTP code.' });
     }
 
-    emailOtpStore.delete(requestId);
+    emailOtpStore.delete(matchedRequestId);
     const verificationToken = generateId();
     verifiedEmailTokenStore.set(verificationToken, {
       email,
@@ -841,20 +915,9 @@ app.get('/api/enquiries', async (req, res) => {
 app.post('/api/enquiries', async (req, res) => {
   try {
     const email = normalizeEmail(req.body?.email);
-    const verificationToken = String(req.body?.emailVerificationToken || '').trim();
 
     if (!isValidEmail(email)) {
       return res.status(400).json({ error: 'A valid email is required for enquiry submission.' });
-    }
-
-    const verification = consumeVerifiedEmailToken({
-      email,
-      token: verificationToken,
-      purpose: 'enquiry'
-    });
-
-    if (!verification.valid) {
-      return res.status(400).json({ error: verification.message });
     }
 
     const payload = {
@@ -1029,20 +1092,9 @@ app.post('/api/contact', async (req, res) => {
   try {
     const { name, phone, message } = req.body;
     const email = normalizeEmail(req.body?.email);
-    const verificationToken = String(req.body?.emailVerificationToken || '').trim();
 
     if (!isValidEmail(email)) {
       return res.status(400).json({ error: 'A valid email is required for contact submission.' });
-    }
-
-    const verification = consumeVerifiedEmailToken({
-      email,
-      token: verificationToken,
-      purpose: 'contact'
-    });
-
-    if (!verification.valid) {
-      return res.status(400).json({ error: verification.message });
     }
 
     const { data, error } = await supabase

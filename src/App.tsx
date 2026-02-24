@@ -20,6 +20,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 const AdminDashboard = lazy(() => import("@/components/admin/AdminDashboard").then((module) => ({ default: module.AdminDashboard })));
 const PropertyManagement = lazy(() => import("@/components/admin/PropertyManagement").then((module) => ({ default: module.PropertyManagement })));
+const AdminAddProperty = lazy(() => import("@/pages/admin/AddProperty"));
 const ImageManager = lazy(() => import("@/components/admin/ImageManager"));
 const EnquiriesPage = lazy(() => import("@/components/admin/EnquiriesPage").then((module) => ({ default: module.EnquiriesPage })));
 const LeadsPage = lazy(() => import("@/components/admin/LeadsPage").then((module) => ({ default: module.LeadsPage })));
@@ -97,6 +98,22 @@ const App = () => {
                   element={
                     <ProtectedRoute requiredRole="admin">
                       <PropertyManagement />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/add-property"
+                  element={
+                    <ProtectedRoute requiredRole="admin">
+                      <AdminAddProperty />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/add-property/:id"
+                  element={
+                    <ProtectedRoute requiredRole="admin">
+                      <AdminAddProperty />
                     </ProtectedRoute>
                   }
                 />

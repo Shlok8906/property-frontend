@@ -26,6 +26,7 @@ import {
 
 const menuItems = [
   { title: 'Dashboard', url: '/admin', icon: LayoutDashboard },
+  { title: 'Add Property', url: '/admin/add-property', icon: Building2 },
   { title: 'Manage Properties', url: '/admin/properties', icon: Building2 },
   { title: 'CSV Import', url: '/admin/csv-import', icon: FileSpreadsheet },
   { title: 'Enquiries', url: '/admin/enquiries', icon: MessageSquare },

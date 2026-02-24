@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { propertyAPI, enquiryAPI, emailVerificationAPI, Property } from '@/lib/api';
+import { propertyAPI, enquiryAPI, Property } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice } from '@/lib/utils';
 import { 
@@ -64,18 +64,61 @@ const amenityIcons: Record<string, any> = {
   'Community Hall': '🏢'
 };
 
+type DescriptionItem = {
+  label: string;
+  value: string;
+};
+
+const listStyleLabels = ['amenities', 'furnishing', 'furnishings', 'highlights', 'features', 'restrictions', 'tenant'];
+
+const parseDescription = (description: string) => {
+  const lines = description
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const structured: DescriptionItem[] = [];
+  const plain: string[] = [];
+
+  lines.forEach((line) => {
+    const separatorIndex = line.indexOf(':');
+    if (separatorIndex > -1) {
+      const rawLabel = line.slice(0, separatorIndex).trim();
+      const rawValue = line.slice(separatorIndex + 1).trim();
+      if (rawLabel && rawValue) {
+        structured.push({ label: rawLabel, value: rawValue });
+        return;
+      }
+    }
+
+    plain.push(line);
+  });
+
+  return { structured, plain };
+};
+
+const shouldRenderAsTags = (label: string) => {
+  const normalizedLabel = label.toLowerCase();
+  return listStyleLabels.some((token) => normalizedLabel.includes(token));
+};
+
+const shouldHideDescriptionLabel = (label: string) => {
+  const normalizedLabel = label.toLowerCase();
+  return normalizedLabel.includes('society amenities');
+};
+
+const splitTagValues = (value: string) =>
+  value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
 export default function PropertyDetail() {
   const { id } = useParams();
   const { toast } = useToast();
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [otpRequestId, setOtpRequestId] = useState('');
-  const [otpVerificationToken, setOtpVerificationToken] = useState('');
-  const [otpSending, setOtpSending] = useState(false);
-  const [otpVerifying, setOtpVerifying] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
   
   // Image gallery state
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -88,13 +131,6 @@ export default function PropertyDetail() {
     phone: '',
     message: ''
   });
-
-  const resetOtpState = () => {
-    setOtpCode('');
-    setOtpRequestId('');
-    setOtpVerificationToken('');
-    setOtpVerified(false);
-  };
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -119,69 +155,6 @@ export default function PropertyDetail() {
     fetchProperty();
   }, [id, toast]);
 
-  const handleRequestOtp = async () => {
-    if (!formData.email) {
-      toast({
-        title: 'Email Required',
-        description: 'Please enter your email to receive OTP.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setOtpSending(true);
-    try {
-      const result = await emailVerificationAPI.requestOtp(formData.email, 'enquiry');
-      setOtpRequestId(result.requestId);
-      setOtpVerificationToken('');
-      setOtpVerified(false);
-
-      toast({
-        title: 'OTP Sent',
-        description: 'Please check your email for the code.'
-      });
-    } catch (error) {
-      toast({
-        title: 'OTP Failed',
-        description: error instanceof Error ? error.message : 'Unable to send OTP right now.',
-        variant: 'destructive'
-      });
-    } finally {
-      setOtpSending(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    if (!otpRequestId || otpCode.length < 6) {
-      toast({
-        title: 'Verification Required',
-        description: 'Request OTP and enter a valid 6-digit code.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setOtpVerifying(true);
-    try {
-      const result = await emailVerificationAPI.verifyOtp(formData.email, otpRequestId, otpCode);
-      setOtpVerificationToken(result.verificationToken);
-      setOtpVerified(true);
-
-      toast({
-        title: 'Email Verified',
-        description: 'You can now submit your enquiry.'
-      });
-    } catch (error) {
-      toast({
-        title: 'Invalid OTP',
-        description: error instanceof Error ? error.message : 'OTP verification failed.',
-        variant: 'destructive'
-      });
-    } finally {
-      setOtpVerifying(false);
-    }
-  };
-
   const handleSubmitEnquiry = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -189,15 +162,6 @@ export default function PropertyDetail() {
       toast({
         title: 'Missing Information',
         description: 'Please provide your name, email and phone number',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    if (!otpVerified || !otpVerificationToken) {
-      toast({
-        title: 'Email Not Verified',
-        description: 'Please verify your email with OTP before sending enquiry.',
         variant: 'destructive'
       });
       return;
@@ -214,7 +178,6 @@ export default function PropertyDetail() {
         email: formData.email,
         phone: formData.phone,
         message: formData.message,
-        emailVerificationToken: otpVerificationToken
       });
 
       toast({
@@ -229,7 +192,6 @@ export default function PropertyDetail() {
         phone: '',
         message: ''
       });
-      resetOtpState();
     } catch (error) {
       console.error('Error submitting enquiry:', error);
       toast({
@@ -248,6 +210,8 @@ export default function PropertyDetail() {
     : property?.image_url 
     ? [property.image_url] 
     : [];
+
+  const parsedDescription = property?.description ? parseDescription(property.description) : null;
 
   const nextImage = () => {
     if (allImages.length > 0) {
@@ -556,8 +520,48 @@ export default function PropertyDetail() {
                   )}
                   {property.description && (
                     <div className="col-span-2 md:col-span-3">
-                      <div className="text-sm text-muted-foreground mb-2">Description</div>
-                      <p className="font-medium whitespace-pre-wrap leading-relaxed">{property.description}</p>
+                      <div className="text-sm text-muted-foreground mb-3">Description</div>
+                      <div className="rounded-xl border bg-muted/20 p-4 space-y-4">
+                        {parsedDescription && parsedDescription.structured.length > 0 && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {parsedDescription.structured
+                              .filter((item) => !shouldHideDescriptionLabel(item.label))
+                              .map((item, index) => {
+                              const showTags = shouldRenderAsTags(item.label);
+                              const tagValues = splitTagValues(item.value);
+
+                              return (
+                                <div key={`${item.label}-${index}`} className="space-y-1">
+                                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                    {item.label}
+                                  </div>
+                                  {showTags ? (
+                                    <div className="flex flex-wrap gap-2">
+                                      {tagValues.map((tag, tagIndex) => (
+                                        <Badge key={`${item.label}-tag-${tagIndex}`} className="bg-gray-200 text-gray-900 hover:bg-gray-300 font-medium">
+                                          {tag}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="font-medium leading-relaxed">{item.value}</div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {parsedDescription && parsedDescription.plain.length > 0 && (
+                          <div className="space-y-2">
+                            {parsedDescription.plain.map((line, index) => (
+                              <p key={`plain-line-${index}`} className="text-sm leading-relaxed text-foreground">
+                                {line}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -612,40 +616,10 @@ export default function PropertyDetail() {
                       id="email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => {
-                        setFormData(prev => ({ ...prev, email: e.target.value }));
-                        resetOtpState();
-                      }}
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                       placeholder="your@email.com"
                       required
                     />
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleRequestOtp}
-                        disabled={otpSending || submitting || !formData.email}
-                        className="sm:col-span-1"
-                      >
-                        {otpSending ? 'Sending...' : otpRequestId ? 'Resend OTP' : 'Send OTP'}
-                      </Button>
-                      <Input
-                        placeholder="Enter OTP"
-                        value={otpCode}
-                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        className="sm:col-span-1"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleVerifyOtp}
-                        disabled={otpVerifying || submitting || !otpRequestId || otpCode.length < 6 || otpVerified}
-                        className="sm:col-span-1"
-                      >
-                        {otpVerified ? 'Verified' : otpVerifying ? 'Verifying...' : 'Verify OTP'}
-                      </Button>
-                    </div>
                   </div>
 
                   <div className="space-y-2">

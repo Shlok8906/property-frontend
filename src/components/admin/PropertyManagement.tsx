@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from './AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Edit2, Trash2, Search } from 'lucide-react';
-import { PropertyForm } from '@/components/admin/PropertyForm';
 import { useToast } from '@/hooks/use-toast';
 import { propertyAPI, Property } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
@@ -21,12 +21,11 @@ import {
 export type { Property } from '@/lib/api';
 
 export function PropertyManagement() {
+  const navigate = useNavigate();
   const [properties, setProperties] = useState<Property[]>([]);
   const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -78,49 +77,12 @@ export function PropertyManagement() {
     }
   };
 
-  const handleSaveProperty = async (data: any) => {
-    try {
-      if (editingProperty) {
-        const updated = await propertyAPI.update(editingProperty._id || editingProperty.id || '', data);
-        setProperties(properties.map(p => 
-          (p._id || p.id) === (editingProperty._id || editingProperty.id) ? updated : p
-        ));
-        toast({
-          title: 'Success',
-          description: 'Property updated successfully',
-        });
-      } else {
-        const newProperty = await propertyAPI.create(data);
-        setProperties([newProperty, ...properties]);
-        toast({
-          title: 'Success',
-          description: 'Property created successfully',
-        });
-      }
-      setShowForm(false);
-      setEditingProperty(null);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: editingProperty ? 'Failed to update property' : 'Failed to create property',
-        variant: 'destructive',
-      });
-    }
-  };
-
   const handleEditClick = (property: Property) => {
-    setEditingProperty(property);
-    setShowForm(true);
-  };
-
-  const handleFormClose = () => {
-    setShowForm(false);
-    setEditingProperty(null);
+    navigate(`/admin/add-property/${property._id || property.id}`);
   };
 
   const handleAddNew = () => {
-    setEditingProperty(null);
-    setShowForm(true);
+    navigate('/admin/add-property');
   };
 
   const handleToggleStatus = async (property: Property) => {
@@ -154,16 +116,6 @@ export function PropertyManagement() {
       });
     }
   };
-
-  if (showForm) {
-    return (
-      <PropertyForm 
-        property={editingProperty} 
-        onSave={handleSaveProperty}
-        onCancel={handleFormClose}
-      />
-    );
-  }
 
   return (
     <AdminLayout

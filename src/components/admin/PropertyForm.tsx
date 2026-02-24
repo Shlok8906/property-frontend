@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { AdminLayout } from './AdminLayout';
-import { AmenitiesSelector } from './AmenitiesSelector';
 import { RestrictionsSelector } from './RestrictionsSelector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -22,6 +22,42 @@ import {
   PropertyPurpose,
   FurnishingType,
 } from '@/types/property';
+
+const flatToggleItems = [
+  'Dining Table',
+  'Washing Machine',
+  'Cupboard',
+  'Sofa',
+  'Microwave',
+  'Stove',
+  'Fridge',
+  'Water Purifier',
+  'Gas Pipeline',
+  'Chimney',
+  'Modular Kitchen',
+];
+
+const flatCountItems = ['Fan', 'Light', 'AC', 'Wardrobe', 'TV', 'Bed', 'Geyser'];
+
+const societyAmenityItems = [
+  'Power Backup',
+  'AC',
+  'TV',
+  'Geyser',
+  'Swimming Pool',
+  'Lift',
+  'Gym',
+  'Intercom',
+  'Garden',
+  'Sports',
+  'Kids Area',
+  'CCTV',
+  'Gated Community',
+  'Club House',
+  'Community Hall',
+  'Regular Water Supply',
+  'Attached Balcony',
+];
 
 interface PropertyFormProps {
   property?: any;
@@ -61,7 +97,30 @@ export function PropertyForm({ property, onSave, onCancel }: PropertyFormProps) 
 
   const [loading, setLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [isAmenitiesDialogOpen, setIsAmenitiesDialogOpen] = useState(false);
+  const [customAmenities, setCustomAmenities] = useState<string[]>([]);
+  const [societyAmenities, setSocietyAmenities] = useState<string[]>([]);
+  const [flatToggleAmenities, setFlatToggleAmenities] = useState<string[]>([]);
+  const [flatCountAmenities, setFlatCountAmenities] = useState<Record<string, number>>({});
   const { toast } = useToast();
+
+  const isUnfurnished = formData.furnishing === 'unfurnished';
+  const selectedFlatCount = Object.values(flatCountAmenities).reduce((sum, value) => sum + (value > 0 ? 1 : 0), 0);
+
+  const selectedFlatFurnishings = [
+    ...flatToggleAmenities,
+    ...flatCountItems
+      .filter((item) => (flatCountAmenities[item] || 0) > 0)
+      .map((item) => `${item} x${flatCountAmenities[item]}`),
+  ];
+
+  const resolvedAmenities = Array.from(
+    new Set([
+      ...customAmenities,
+      ...societyAmenities,
+      ...(isUnfurnished ? [] : selectedFlatFurnishings),
+    ])
+  );
 
   // Pre-fill form with property data if editing
   useEffect(() => {
@@ -76,6 +135,38 @@ export function PropertyForm({ property, onSave, onCancel }: PropertyFormProps) 
         : property.restrictions || [];
 
       const imagesArray = property.images || (property.image_url ? [property.image_url] : []);
+
+      const parsedFlatCounts: Record<string, number> = {};
+      const detectedFlatToggles: string[] = [];
+      const detectedSocietyAmenities: string[] = [];
+      const detectedCustomAmenities: string[] = [];
+
+      amenitiesArray.forEach((amenity: string) => {
+        const countMatch = amenity.match(/^(.*) x(\d+)$/);
+        if (countMatch && flatCountItems.includes(countMatch[1])) {
+          parsedFlatCounts[countMatch[1]] = Number(countMatch[2]);
+          return;
+        }
+
+        if (flatToggleItems.includes(amenity)) {
+          detectedFlatToggles.push(amenity);
+          return;
+        }
+
+        if (societyAmenityItems.includes(amenity)) {
+          detectedSocietyAmenities.push(amenity);
+          return;
+        }
+
+        if (!['Fully Furnished', 'Semi Furnished', 'Unfurnished'].includes(amenity)) {
+          detectedCustomAmenities.push(amenity);
+        }
+      });
+
+      setFlatCountAmenities(parsedFlatCounts);
+      setFlatToggleAmenities(detectedFlatToggles);
+      setSocietyAmenities(detectedSocietyAmenities);
+      setCustomAmenities(detectedCustomAmenities);
 
       setFormData({
         title: property.title || '',
@@ -113,6 +204,18 @@ export function PropertyForm({ property, onSave, onCancel }: PropertyFormProps) 
       ...prev,
       [field]: value,
     }));
+  };
+
+  const toggleArrayValue = (value: string, setter: React.Dispatch<React.SetStateAction<string[]>>) => {
+    setter((prev) => (prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]));
+  };
+
+  const updateFurnishingCount = (item: string, delta: number) => {
+    setFlatCountAmenities((prev) => {
+      const current = prev[item] || 0;
+      const next = Math.max(0, current + delta);
+      return { ...prev, [item]: next };
+    });
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -205,6 +308,7 @@ export function PropertyForm({ property, onSave, onCancel }: PropertyFormProps) 
       price: resolvedPrice,
       rent: isRentPurpose ? formData.rent : '',
       deposit: isRentPurpose ? formData.deposit : '',
+      amenities: resolvedAmenities,
       image_url: formData.images.length > 0 ? formData.images[0] : undefined,
       images: formData.images,
       status: formData.status || 'active',
@@ -602,11 +706,98 @@ export function PropertyForm({ property, onSave, onCancel }: PropertyFormProps) 
           
           <div className="space-y-8">
             <div>
-              <Label className="text-base font-medium mb-4 block">Select Amenities</Label>
-              <AmenitiesSelector 
-                selectedAmenities={formData.amenities}
-                onChange={(amenities) => handleChange('amenities', amenities)}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <Label className="text-base font-medium">Add property furnishings and amenities</Label>
+                <Button type="button" variant="outline" onClick={() => setIsAmenitiesDialogOpen(true)}>
+                  + Add Amenities
+                </Button>
+              </div>
+
+              <div className="rounded-lg border p-4 grid md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground mb-1">Flat Furnishings</p>
+                  <p className="font-medium">{isUnfurnished ? 'Unfurnished' : `${selectedFlatFurnishings.length} selected`}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground mb-1">Society Amenities</p>
+                  <p className="font-medium">{societyAmenities.length} selected</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground mb-1">Total Saved</p>
+                  <p className="font-medium">{resolvedAmenities.length}</p>
+                </div>
+              </div>
+
+              <Dialog open={isAmenitiesDialogOpen} onOpenChange={setIsAmenitiesDialogOpen}>
+                <DialogContent className="sm:max-w-5xl max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Add property furnishings and amenities</DialogTitle>
+                  </DialogHeader>
+
+                  {!isUnfurnished && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold">Flat Furnishings</h3>
+                        <span className="text-sm text-muted-foreground">{flatToggleAmenities.length + selectedFlatCount} selected</span>
+                      </div>
+
+                      <div className="grid md:grid-cols-4 gap-3">
+                        {flatToggleItems.map((item) => (
+                          <button
+                            key={item}
+                            type="button"
+                            onClick={() => toggleArrayValue(item, setFlatToggleAmenities)}
+                            className={flatToggleAmenities.includes(item)
+                              ? 'h-24 rounded-lg border border-primary bg-primary/10 text-primary px-3 text-sm font-medium transition-colors'
+                              : 'h-24 rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-muted/40'}
+                          >
+                            {item}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="grid md:grid-cols-4 gap-3">
+                        {flatCountItems.map((item) => (
+                          <div key={item} className="h-24 rounded-lg border px-3 py-3 flex flex-col justify-between">
+                            <p className="text-sm font-medium">{item}</p>
+                            <div className="flex items-center justify-center gap-3 text-sm">
+                              <button type="button" className="font-semibold" onClick={() => updateFurnishingCount(item, -1)}>-</button>
+                              <span>{flatCountAmenities[item] || 0}</span>
+                              <button type="button" className="font-semibold" onClick={() => updateFurnishingCount(item, 1)}>+</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">Society Amenities</h3>
+                      <span className="text-sm text-muted-foreground">{societyAmenities.length} selected</span>
+                    </div>
+
+                    <div className="grid md:grid-cols-4 gap-3">
+                      {societyAmenityItems.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => toggleArrayValue(item, setSocietyAmenities)}
+                          className={societyAmenities.includes(item)
+                            ? 'h-24 rounded-lg border border-primary bg-primary/10 text-primary px-3 text-sm font-medium transition-colors'
+                            : 'h-24 rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-muted/40'}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Button type="button" className="w-full" onClick={() => setIsAmenitiesDialogOpen(false)}>
+                    Save
+                  </Button>
+                </DialogContent>
+              </Dialog>
             </div>
 
             <div>
