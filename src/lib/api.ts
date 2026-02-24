@@ -304,6 +304,16 @@ export const enquiryAPI = {
     return response.json();
   },
 
+  // Mark enquiry as read
+  async markAsRead(id: string): Promise<Enquiry> {
+    const response = await fetchWithApiFallback(`/enquiries/${id}/read`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to mark enquiry as read');
+    return response.json();
+  },
+
   // Delete enquiry
   async delete(id: string): Promise<{ success: boolean }> {
     const response = await fetchWithApiFallback(`/enquiries/${id}`, {
@@ -380,6 +390,25 @@ export const userAPI = {
       body: JSON.stringify({ role }),
     });
     if (!response.ok) throw new Error('Failed to update user role');
+    return response.json();
+  },
+};
+
+export const contactAPI = {
+  // Get all contact messages
+  async getAll(): Promise<any[]> {
+    const response = await fetch('/api/contact-messages');
+    if (!response.ok) throw new Error('Failed to fetch contact messages');
+    return response.json();
+  },
+
+  // Mark message as read
+  async markAsRead(id: string): Promise<any> {
+    const response = await fetch(`/api/contact-messages/${id}/read`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to mark message as read');
     return response.json();
   },
 };

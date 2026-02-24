@@ -922,7 +922,8 @@ app.post('/api/enquiries', async (req, res) => {
 
     const payload = {
       ...mapEnquiryToDb({ ...req.body, email }),
-      status: req.body.status || 'new'
+      status: req.body.status || 'new',
+      read: false
     };
 
     const { data, error } = await supabase
@@ -949,6 +950,27 @@ app.put('/api/enquiries/:id', async (req, res) => {
     const { data, error } = await supabase
       .from(TABLES.enquiries)
       .update(payload)
+      .eq('id', req.params.id)
+      .select('*')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      return res.status(404).json({ error: 'Enquiry not found' });
+    }
+
+    res.json(mapEnquiryFromDb(data));
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Mark enquiry as read
+app.patch('/api/enquiries/:id/read', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from(TABLES.enquiries)
+      .update({ read: true, updated_at: new Date().toISOString() })
       .eq('id', req.params.id)
       .select('*')
       .maybeSingle();
@@ -1104,7 +1126,8 @@ app.post('/api/contact', async (req, res) => {
         phone,
         email,
         message,
-        status: 'new'
+        status: 'new',
+        read: false
       })
       .select('*')
       .single();
@@ -1123,6 +1146,27 @@ app.put('/api/contact-messages/:id', async (req, res) => {
     const { data, error } = await supabase
       .from(TABLES.contactMessages)
       .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .select('*')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    res.json(mapContactMessageFromDb(data));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Mark contact message as read
+app.patch('/api/contact-messages/:id/read', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from(TABLES.contactMessages)
+      .update({ read: true, updated_at: new Date().toISOString() })
       .eq('id', req.params.id)
       .select('*')
       .maybeSingle();

@@ -1,5 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect } from 'react';
+import { enquiryAPI, contactAPI } from '@/lib/api';
 import {
   Sidebar,
   SidebarContent,
@@ -13,6 +15,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   LayoutDashboard, 
   Building2, 
@@ -37,12 +40,51 @@ const menuItems = [
 export function AdminSidebar() {
   const { signOut } = useAuth();
   const location = useLocation();
+  const [unreadEnquiries, setUnreadEnquiries] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const enquiries = await enquiryAPI.getAll();
+        const unreadCount = enquiries.filter((e: any) => !e.read).length;
+        setUnreadEnquiries(unreadCount);
+
+        const messages = await contactAPI.getAll();
+        const unreadMsgCount = messages.filter((m: any) => !m.read).length;
+        setUnreadMessages(unreadMsgCount);
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+    };
+
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const isActive = (url: string) => {
     if (url === '/admin') {
       return location.pathname === '/admin';
     }
     return location.pathname.startsWith(url);
+  };
+
+  const getMenuItemWithBadge = (item: typeof menuItems[0]) => {
+    if (item.title === 'Enquiries' && unreadEnquiries > 0) {
+      return {
+        ...item,
+        badge: unreadEnquiries
+      };
+    }
+    if (item.title === 'Messages' && unreadMessages > 0) {
+      return {
+        ...item,
+        badge: unreadMessages
+      };
+    }
+    return item;
   };
 
   return (
@@ -66,20 +108,30 @@ export function AdminSidebar() {
           <SidebarGroupLabel className="text-muted-foreground/70">Management</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={isActive(item.url)}
-                    className="hover:bg-muted/50 data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
-                  >
-                    <Link to={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {menuItems.map((item) => {
+                const itemWithBadge = getMenuItemWithBadge(item);
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={isActive(item.url)}
+                      className="hover:bg-muted/50 data-[active=true]:bg-primary/10 data-[active=true]:text-primary relative"
+                    >
+                      <Link to={item.url} className="flex items-center justify-between w-full">
+                        <span className="flex items-center gap-2">
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </span>
+                        {itemWithBadge.badge && (
+                          <Badge variant="destructive" className="ml-auto">
+                            {itemWithBadge.badge}
+                          </Badge>
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
