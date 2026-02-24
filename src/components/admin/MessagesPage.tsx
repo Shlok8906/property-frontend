@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/select';
 import { Search, MessageSquare, Trash2, Eye, Mail, Phone, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { contactAPI } from '@/lib/api';
 
 interface ContactMessage {
   _id?: string;
@@ -39,6 +40,7 @@ interface ContactMessage {
   status: 'new' | 'responded' | 'closed';
   created_at: string;
   updated_at: string;
+  read?: boolean;
 }
 
 export function MessagesPage() {
@@ -53,6 +55,27 @@ export function MessagesPage() {
 
   useEffect(() => {
     fetchMessages();
+  }, []);
+
+  // Mark all unread messages as read when page loads
+  useEffect(() => {
+    const markAsRead = async () => {
+      try {
+        const allMessages = await contactAPI.getAll();
+        const unreadMessages = allMessages.filter((m: any) => !m.read);
+        
+        for (const message of unreadMessages) {
+          const msgId = message.id || message._id;
+          if (msgId) {
+            await contactAPI.markAsRead(msgId);
+          }
+        }
+      } catch (error) {
+        console.error('Error marking messages as read:', error);
+      }
+    };
+
+    markAsRead();
   }, []);
 
   useEffect(() => {

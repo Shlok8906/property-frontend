@@ -397,14 +397,28 @@ export const userAPI = {
 export const contactAPI = {
   // Get all contact messages
   async getAll(): Promise<any[]> {
-    const response = await fetch('/api/contact-messages');
+    const response = await fetchWithApiFallback('/contact-messages');
     if (!response.ok) throw new Error('Failed to fetch contact messages');
+    return response.json();
+  },
+
+  // Create contact message
+  async create(message: { name: string; email: string; phone: string; message: string }): Promise<any> {
+    const response = await fetchWithApiFallback('/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(message),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error?.error || 'Failed to send message');
+    }
     return response.json();
   },
 
   // Mark message as read
   async markAsRead(id: string): Promise<any> {
-    const response = await fetch(`/api/contact-messages/${id}/read`, {
+    const response = await fetchWithApiFallback(`/contact-messages/${id}/read`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
     });

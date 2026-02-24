@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { enquiryAPI } from '@/lib/api';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import {
@@ -42,6 +43,7 @@ interface Enquiry {
   message: string | null;
   status: string;
   created_at: string;
+  read?: boolean;
   projects: {
     project_name: string;
     location: string;
@@ -91,6 +93,24 @@ export default function AdminEnquiries() {
   useEffect(() => {
     fetchEnquiries();
   }, [statusFilter]);
+
+  // Mark all unread enquiries as read when page loads
+  useEffect(() => {
+    const markAsRead = async () => {
+      try {
+        const allEnquiries = await enquiryAPI.getAll();
+        const unreadEnquiries = allEnquiries.filter((e: any) => !e.read);
+        
+        for (const enquiry of unreadEnquiries) {
+          await enquiryAPI.markAsRead(enquiry.id);
+        }
+      } catch (error) {
+        console.error('Error marking enquiries as read:', error);
+      }
+    };
+
+    markAsRead();
+  }, []);
 
   const updateStatus = async (enquiryId: string, newStatus: string) => {
     try {

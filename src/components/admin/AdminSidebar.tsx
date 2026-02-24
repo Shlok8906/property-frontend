@@ -48,13 +48,16 @@ export function AdminSidebar() {
       try {
         const enquiries = await enquiryAPI.getAll();
         const unreadCount = enquiries.filter((e: any) => !e.read).length;
+        console.log('📧 Unread Enquiries:', unreadCount);
         setUnreadEnquiries(unreadCount);
 
         const messages = await contactAPI.getAll();
+        console.log('💬 Total Messages:', messages.length);
         const unreadMsgCount = messages.filter((m: any) => !m.read).length;
+        console.log('💬 Unread Messages:', unreadMsgCount);
         setUnreadMessages(unreadMsgCount);
       } catch (error) {
-        console.error('Error fetching notifications:', error);
+        console.error('❌ Error fetching notifications:', error);
       }
     };
 

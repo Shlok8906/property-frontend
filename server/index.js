@@ -378,6 +378,7 @@ const mapEnquiryFromDb = (row) => ({
   phone: row.phone,
   message: row.message,
   status: row.status,
+  read: row.read,
   created_at: row.created_at,
   updated_at: row.updated_at
 });
@@ -434,6 +435,7 @@ const mapContactMessageFromDb = (row) => ({
   email: row.email,
   message: row.message,
   status: row.status,
+  read: row.read,
   created_at: row.created_at,
   updated_at: row.updated_at
 });
@@ -916,7 +918,18 @@ app.post('/api/enquiries', async (req, res) => {
   try {
     const email = normalizeEmail(req.body?.email);
 
+    console.log('=== ENQUIRY REQUEST ===');
+    console.log('Body:', JSON.stringify(req.body));
+    console.log('Email:', email);
+    console.log('Valid:', isValidEmail(email));
+
+    if (!email || !req.body?.name || !req.body?.phone) {
+      console.log('Missing required fields');
+      return res.status(400).json({ error: 'Name, email and phone are required.' });
+    }
+
     if (!isValidEmail(email)) {
+      console.log('Invalid email');
       return res.status(400).json({ error: 'A valid email is required for enquiry submission.' });
     }
 
@@ -926,15 +939,26 @@ app.post('/api/enquiries', async (req, res) => {
       read: false
     };
 
+    console.log('Payload:', JSON.stringify(payload));
+    console.log('Inserting into database...');
+
     const { data, error } = await supabase
       .from(TABLES.enquiries)
       .insert(payload)
       .select('*')
       .single();
 
-    if (error) throw error;
+    console.log('Response:', { error: error?.message, data: data ? '✓' : '✗' });
+
+    if (error) {
+      console.log('DB Error:', error.message);
+      throw error;
+    }
+
+    console.log('Success!');
     res.status(201).json(mapEnquiryFromDb(data));
   } catch (error) {
+    console.log('Catch error:', error.message);
     res.status(400).json({ error: error.message });
   }
 });
@@ -1115,10 +1139,22 @@ app.post('/api/contact', async (req, res) => {
     const { name, phone, message } = req.body;
     const email = normalizeEmail(req.body?.email);
 
+    console.log('=== CONTACT REQUEST ===');
+    console.log('Body:', JSON.stringify(req.body));
+    console.log('Email:', email);
+    console.log('Valid:', isValidEmail(email));
+
+    if (!email || !name || !phone || !message) {
+      console.log('Missing fields');
+      return res.status(400).json({ error: 'All fields (name, phone, email, message) are required.' });
+    }
+
     if (!isValidEmail(email)) {
+      console.log('Invalid email');
       return res.status(400).json({ error: 'A valid email is required for contact submission.' });
     }
 
+    console.log('Inserting into database...');
     const { data, error } = await supabase
       .from(TABLES.contactMessages)
       .insert({
@@ -1132,9 +1168,17 @@ app.post('/api/contact', async (req, res) => {
       .select('*')
       .single();
 
-    if (error) throw error;
+    console.log('Response:', { error: error?.message, data: data ? '✓' : '✗' });
+
+    if (error) {
+      console.log('DB Error:', error.message);
+      throw error;
+    }
+
+    console.log('Success!');
     res.status(201).json({ success: true, message: 'Message sent successfully', data: mapContactMessageFromDb(data) });
   } catch (error) {
+    console.log('Catch error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });

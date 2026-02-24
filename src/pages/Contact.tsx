@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Phone, Mail, MapPin, Send } from 'lucide-react';
+import { contactAPI } from '@/lib/api';
 
 export default function Contact() {
   const { toast } = useToast();
@@ -24,21 +25,7 @@ export default function Contact() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/contact`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || 'Failed to send message');
-      }
+      await contactAPI.create(formData);
 
       toast({
         title: 'Message Sent!',
