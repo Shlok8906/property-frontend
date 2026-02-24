@@ -569,26 +569,32 @@ export default function PropertyDetail() {
             </Card>
 
             {/* Amenities */}
-            {property.amenities && property.amenities.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Amenities</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
-                    {property.amenities.map((amenity, index) => (
-                      <div 
-                        key={index} 
-                        className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                      >
-                        <span className="text-2xl">{amenityIcons[amenity] || '✓'}</span>
-                        <span className="text-sm font-medium">{amenity}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            {property.description && (() => {
+              const societyAmenitiesLine = (property.description || '').split('\n').find(line => line.toLowerCase().includes('society amenities'));
+              const societyAmenitiesText = societyAmenitiesLine ? societyAmenitiesLine.split(':').slice(1).join(':').trim() : '';
+              const societyAmenities = societyAmenitiesText ? societyAmenitiesText.split(',').map(a => a.trim()).filter(Boolean) : [];
+              
+              return societyAmenities.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Amenities</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+                      {societyAmenities.map((amenity, index) => (
+                        <div 
+                          key={index} 
+                          className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                        >
+                          <span className="text-2xl">{amenityIcons[amenity] || '✓'}</span>
+                          <span className="text-sm font-medium">{amenity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
           </div>
 
           {/* Sidebar - Enquiry Form */}
